@@ -1,15 +1,12 @@
 #!/bin/bash
-# Launch rt-claw on ESP32-C3 QEMU (Espressif fork)
+# Launch rt-claw on ESP32-C3 QEMU with GDB server
 #
 # Two modes:
-#   ./esp32c3-qemu-run.sh           - use idf.py qemu (recommended)
-#   ./esp32c3-qemu-run.sh --raw     - use qemu-system-riscv32 directly
+#   ./esp32c3-qemu-dbg.sh           - use idf.py (recommended)
+#   ./esp32c3-qemu-dbg.sh --raw     - use qemu-system-riscv32 directly
 #
-# Prerequisites:
-#   1. ESP-IDF installed and sourced (. $IDF_PATH/export.sh)
-#   2. Espressif QEMU installed:
-#      python $IDF_PATH/tools/idf_tools.py install qemu-riscv32
-#   3. Project built: ./tools/esp32c3-build.sh
+# Then connect GDB in another terminal:
+#   riscv32-esp-elf-gdb build/rt-claw.elf -ex 'target remote :1234'
 
 set -e
 
@@ -31,8 +28,6 @@ if [ ! -d "build" ]; then
 fi
 
 if [ "$1" = "--raw" ]; then
-    # Direct QEMU launch (without idf.py wrapper)
-    # Generate merged flash image
     FLASH_SIZE="4MB"
     FLASH_IMAGE="build/flash_image.bin"
 
@@ -42,14 +37,15 @@ if [ "$1" = "--raw" ]; then
         -o "$FLASH_IMAGE" \
         @build/flash_args
 
-    echo ">>> Starting QEMU (ESP32-C3) ..."
-    exec qemu-system-riscv32 -nographic \
+    echo ">>> Starting QEMU debug mode (GDB port 1234) ..."
+    echo "Connect with: riscv32-esp-elf-gdb build/rt-claw.elf -ex 'target remote :1234'"
+    exec qemu-system-riscv32 -nographic -s -S \
         -icount 3 \
         -machine esp32c3 \
         -drive "file=$FLASH_IMAGE,if=mtd,format=raw" \
-        -global driver=timer.esp32c3.timg,property=wdt_disable,value=true \
-        -nic user,model=open_eth
+        -global driver=timer.esp32c3.timg,property=wdt_disable,value=true
 else
-    # idf.py wrapper (handles flash image creation automatically)
-    exec idf.py qemu monitor
+    echo ">>> Starting QEMU debug mode via idf.py ..."
+    echo "Then run in another terminal: idf.py gdb"
+    exec idf.py qemu --gdb monitor
 fi
