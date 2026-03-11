@@ -1,70 +1,74 @@
 # rt-claw
 
-Real-Time Claw — an OpenClaw-inspired intelligent assistant running on RT-Thread RTOS.
+Real-Time Claw — an OpenClaw-inspired intelligent assistant for embedded devices.
 
-Run claw on any embedded device. Build swarm intelligence with networked nodes.
+Multi-RTOS support via OSAL. Build swarm intelligence with networked nodes.
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────┐
-│            Applications (claw_app)       │
-├─────────────────────────────────────────┤
-│  ┌──────────┐ ┌────────┐ ┌───────────┐ │
-│  │ gateway   │ │ swarm  │ │ ai_engine │ │
-│  │ (message) │ │ (mesh) │ │(inference)│ │
-│  └──────────┘ └────────┘ └───────────┘ │
-├─────────────────────────────────────────┤
-│  RT-Thread Kernel + Components          │
-│  (Thread, IPC, FinSH, Device, lwIP)     │
-├─────────────────────────────────────────┤
-│  BSP / HAL (qemu-vexpress-a9)           │
-└─────────────────────────────────────────┘
++--------------------------------------------------+
+|               rt-claw Application                 |
+|   gateway  |  swarm  |  net_service  |  ai_engine |
++--------------------------------------------------+
+|               claw_os.h  (OSAL API)               |
++-----------------+---------------------------------+
+| FreeRTOS (IDF)  |          RT-Thread              |
++-----------------+---------------------------------+
+| ESP32-C3        |  QEMU vexpress-a9               |
+| WiFi / BLE      |  Ethernet / UART                |
++-----------------+---------------------------------+
 ```
 
-## Prerequisites
+## Supported Platforms
 
-- `arm-none-eabi-gcc` toolchain
-- `qemu-system-arm`
-- `scons`
-- `python3`
+| Platform | RTOS | Build System | Status |
+|----------|------|-------------|--------|
+| ESP32-C3 | ESP-IDF + FreeRTOS | CMake (idf.py) | WIP |
+| QEMU vexpress-a9 | RT-Thread | SCons | Working |
 
-## Build
+## Quick Start
+
+### QEMU vexpress-a9 (RT-Thread)
 
 ```bash
+# Prerequisites: arm-none-eabi-gcc, qemu-system-arm, scons
+cd platform/qemu-a9-rtthread
 scons -j$(nproc)
+../../tools/qemu-run.sh
 ```
 
-## Run
+### ESP32-C3 (ESP-IDF)
 
 ```bash
-./tools/qemu-run.sh
-```
-
-## Debug
-
-```bash
-# Terminal 1: start QEMU with GDB server
-./tools/qemu-dbg.sh
-
-# Terminal 2: connect GDB
-arm-none-eabi-gdb -ex 'target remote :1234' rtthread.elf
+# Prerequisites: ESP-IDF v5.x, Espressif QEMU
+cd platform/esp32c3
+idf.py set-target esp32c3
+idf.py build
+idf.py qemu monitor         # QEMU
+idf.py -p /dev/ttyUSB0 flash monitor  # real hardware
 ```
 
 ## Project Structure
 
 ```
 rt-claw/
-├── applications/        # Application entry (main.c)
-├── drivers/             # BSP drivers (qemu-vexpress-a9)
-├── src/
-│   ├── core/            # Message gateway
-│   └── services/
-│       ├── swarm/       # Swarm node discovery & coordination
-│       ├── net/         # Network service (lwIP)
-│       └── ai/          # Lightweight inference engine
-├── vendor/rt-thread/    # RT-Thread source (git submodule)
-└── tools/               # QEMU launch scripts
+├── osal/                    # OS Abstraction Layer
+│   ├── include/claw_os.h   #   Unified RTOS API
+│   ├── freertos/            #   FreeRTOS implementation
+│   └── rtthread/            #   RT-Thread implementation
+├── src/                     # Platform-independent core
+│   ├── core/gateway.*       #   Message routing
+│   ├── services/swarm/      #   Swarm intelligence
+│   ├── services/net/        #   Network service
+│   └── services/ai/         #   AI inference engine
+├── platform/
+│   ├── esp32c3/             # ESP-IDF project (CMake)
+│   └── qemu-a9-rtthread/   # RT-Thread BSP (SCons)
+├── vendor/
+│   ├── freertos/            # FreeRTOS-Kernel (submodule)
+│   └── rt-thread/           # RT-Thread (submodule)
+└── tools/                   # Build & launch scripts
 ```
 
 ## License

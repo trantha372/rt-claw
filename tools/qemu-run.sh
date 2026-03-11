@@ -1,10 +1,10 @@
 #!/bin/bash
-# Launch rt-claw on QEMU vexpress-a9
+# Launch rt-claw on QEMU vexpress-a9 (RT-Thread)
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+PLATFORM_DIR="$(dirname "$SCRIPT_DIR")/platform/qemu-a9-rtthread"
 
-cd "$PROJECT_DIR" || exit 1
+cd "$PLATFORM_DIR" || exit 1
 
 if [ ! -f "sd.bin" ]; then
     echo "Creating SD card image..."
@@ -12,7 +12,8 @@ if [ ! -f "sd.bin" ]; then
 fi
 
 if [ ! -f "rtthread.bin" ]; then
-    echo "Error: rtthread.bin not found. Build first with 'scons'."
+    echo "Error: rtthread.bin not found. Build first:"
+    echo "  cd platform/qemu-a9-rtthread && scons -j\$(nproc)"
     exit 1
 fi
 

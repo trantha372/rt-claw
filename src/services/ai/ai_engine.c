@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include <rtthread.h>
+#include "claw_os.h"
 #include "ai_engine.h"
+
+#define TAG "ai"
 
 int ai_engine_init(void)
 {
-    rt_kprintf("[ai] engine initialized (inference backend pending)\n");
-    return 0;
+    CLAW_LOGI(TAG, "engine initialized (inference backend pending)");
+    return CLAW_OK;
 }
-
-INIT_APP_EXPORT(ai_engine_init);

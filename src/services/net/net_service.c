@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include <rtthread.h>
+#include "claw_os.h"
 #include "net_service.h"
+
+#define TAG "net"
 
 int net_service_init(void)
 {
-    rt_kprintf("[net] service initialized (lwIP pending configuration)\n");
-    return 0;
+    CLAW_LOGI(TAG, "service initialized (network backend pending)");
+    return CLAW_OK;
 }
-
-INIT_APP_EXPORT(net_service_init);

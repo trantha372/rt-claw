@@ -6,15 +6,39 @@ rt-claw brings the OpenClaw personal assistant concept to embedded RTOS devices.
 Each rt-claw node is a lightweight, real-time capable unit that can operate
 standalone or join a swarm of nodes for distributed intelligence.
 
-## Core Concepts
+Multi-RTOS support through OSAL (OS Abstraction Layer) — same core code runs
+on FreeRTOS (ESP-IDF) and RT-Thread with zero modification.
+
+## OSAL — OS Abstraction Layer
+
+The key architectural decision: all rt-claw core code depends only on `claw_os.h`.
+
+```
+src/*.c  --->  #include "claw_os.h"  (compile-time interface)
+                        |
+          +-------------+-------------+
+          |                           |
+  claw_os_freertos.c          claw_os_rtthread.c
+  (linked on ESP-IDF)         (linked on RT-Thread)
+```
+
+Abstracted primitives:
+- Thread, Mutex, Semaphore, Message Queue, Timer
+- Memory allocation (malloc/free)
+- Logging (CLAW_LOGI/LOGW/LOGE/LOGD)
+- Tick / time
+
+Design: interface header + per-RTOS implementation file (link-time binding).
+Zero runtime overhead. No function pointers. No conditional compilation in core code.
+
+## Core Services
 
 ### Gateway (src/core/gateway)
 
 Central message router inspired by OpenClaw's Gateway architecture.
-All inter-service and external communication flows through the gateway.
 
-- Thread-safe message queue (RT-Thread `rt_messagequeue`)
-- Channel-based routing (source → destination)
+- Thread-safe message queue (via `claw_mq_*`)
+- Channel-based routing (source -> destination)
 - Message types: DATA, CMD, EVENT, SWARM
 
 ### Swarm Service (src/services/swarm)
@@ -22,55 +46,75 @@ All inter-service and external communication flows through the gateway.
 Node discovery and coordination for building a mesh of rt-claw devices.
 
 - UDP broadcast discovery on local network
+- ESP-NOW for ultra-low-latency P2P (ESP32 platforms)
 - Heartbeat-based liveness detection
-- Capability advertisement (what each node can do)
+- Capability advertisement
 - Task distribution across the swarm
 
 ### Network Service (src/services/net)
 
-lwIP-based networking layer providing:
+Platform-aware networking:
 
-- TCP/IP connectivity
-- MQTT client for cloud/broker communication
-- HTTP client for API calls
-- mDNS for local service discovery
+- ESP32-C3: WiFi (802.11 b/g/n) + MQTT + mbedTLS
+- QEMU-A9: Ethernet (smc911x) + lwIP + MQTT
+- Common: MQTT topic-based channel system (maps to OpenClaw's multi-channel)
 
 ### AI Engine (src/services/ai)
 
-Lightweight inference runtime for embedded decision making.
+Lightweight inference runtime:
 
-- TinyML model loading and execution
-- Decision pipeline with configurable rules
-- Swarm-coordinated inference (split workloads across nodes)
+- Rule engine for local decision making
+- MQTT relay to cloud LLM APIs
+- TinyML model execution (future)
+
+## Platforms
+
+### ESP32-C3 (platform/esp32c3/)
+
+- CPU: RISC-V 32-bit (rv32imc), 160MHz
+- RAM: 400KB SRAM (~240KB available for app)
+- WiFi: 802.11 b/g/n
+- BLE: Bluetooth 5.0 LE
+- RTOS: ESP-IDF + FreeRTOS
+- Build: CMake (idf.py)
+- QEMU: Espressif fork (qemu-riscv32), UART only (no WiFi sim)
+
+### QEMU vexpress-a9 (platform/qemu-a9-rtthread/)
+
+- CPU: ARM Cortex-A9 (dual-core)
+- RTOS: RT-Thread
+- Build: SCons
+- Peripherals: UART, Ethernet, LCD, SD card
 
 ## Communication Flow
 
 ```
 External (MQTT/HTTP)
-       │
-       ▼
-  ┌─────────┐
-  │ net_svc  │
-  └────┬─────┘
-       │
-       ▼
-  ┌─────────┐     ┌─────────┐
-  │ gateway  │────▶│ swarm   │──── other rt-claw nodes
-  └────┬─────┘     └─────────┘
-       │
-       ▼
-  ┌─────────┐
-  │ai_engine│
-  └─────────┘
+       |
+       v
+  +---------+
+  | net_svc |
+  +----+----+
+       |
+       v
+  +---------+     +---------+
+  | gateway |---->| swarm   |---- other rt-claw nodes
+  +----+----+     +---------+
+       |
+       v
+  +---------+
+  |ai_engine|
+  +---------+
 ```
 
-## BSP: QEMU vexpress-a9
+## ESP32-C3 Resource Budget
 
-Development target: ARM Cortex-A9 on QEMU.
-This provides a zero-hardware development environment with:
-
-- Dual-core ARM Cortex-A9
-- UART console (FinSH shell)
-- SMC911x Ethernet (for network services)
-- PL111 LCD controller (future GUI)
-- SD card (FAT filesystem)
+| Module | SRAM | Notes |
+|--------|------|-------|
+| ESP-IDF + WiFi + TLS | ~160KB | System overhead |
+| Gateway | ~8KB | MQ 16x256B + thread |
+| Swarm | ~12KB | 32 nodes + ESP-NOW |
+| Net (MQTT) | ~25KB | Client + buffers |
+| AI Engine | ~15KB | Rule engine |
+| App + CLI | ~10KB | Main + shell |
+| **Total** | **~230KB** | ~170KB headroom |

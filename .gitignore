@@ -7,15 +7,16 @@ build/
 *.map
 *.hex
 *.img
-rtthread.elf
-rtthread.bin
-rtthread.map
-rt-thread.elf
 
 # SCons
 .sconsign.dblite
 *.pyc
 __pycache__/
+
+# ESP-IDF
+sdkconfig
+sdkconfig.old
+managed_components/
 
 # IDE
 .vscode/
@@ -35,5 +36,5 @@ Thumbs.db
 packages/
 
 # Auto-generated
-drivers/automac.h
+**/automac.h
 sd.bin

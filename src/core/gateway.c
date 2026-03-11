@@ -3,58 +3,50 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include <rtthread.h>
+#include "claw_os.h"
 #include "gateway.h"
 
-static struct rt_messagequeue gw_mq;
-static uint8_t gw_mq_pool[GATEWAY_MSG_POOL_SIZE * (sizeof(struct gateway_msg) + sizeof(void *))];
-static struct rt_thread gw_thread;
-static uint8_t gw_thread_stack[GATEWAY_THREAD_STACK];
+#define TAG "gateway"
+
+static claw_mq_t gw_mq;
 
 static void gateway_thread_entry(void *param)
 {
     struct gateway_msg msg;
 
-    rt_kprintf("[gateway] started\n");
+    CLAW_LOGI(TAG, "started");
 
     while (1) {
-        if (rt_mq_recv(&gw_mq, &msg, sizeof(msg), RT_WAITING_FOREVER) == RT_EOK) {
-            rt_kprintf("[gateway] msg type=%d src=%d dst=%d len=%d\n",
-                       msg.type, msg.src_channel, msg.dst_channel, msg.len);
+        if (claw_mq_recv(gw_mq, &msg, sizeof(msg),
+                          CLAW_WAIT_FOREVER) == CLAW_OK) {
+            CLAW_LOGD(TAG, "msg type=%d src=%d dst=%d len=%d",
+                      msg.type, msg.src_channel, msg.dst_channel, msg.len);
         }
     }
 }
 
 int gateway_init(void)
 {
-    rt_err_t ret;
-
-    ret = rt_mq_init(&gw_mq, "gw_mq",
-                      gw_mq_pool, sizeof(struct gateway_msg),
-                      sizeof(gw_mq_pool),
-                      RT_IPC_FLAG_FIFO);
-    if (ret != RT_EOK) {
-        rt_kprintf("[gateway] mq init failed: %d\n", ret);
-        return -1;
+    gw_mq = claw_mq_create("gw_mq", sizeof(struct gateway_msg),
+                             CLAW_GW_MSG_POOL_SIZE);
+    if (!gw_mq) {
+        CLAW_LOGE(TAG, "mq create failed");
+        return CLAW_ERROR;
     }
 
-    ret = rt_thread_init(&gw_thread, "gateway",
-                          gateway_thread_entry, RT_NULL,
-                          gw_thread_stack, sizeof(gw_thread_stack),
-                          GATEWAY_THREAD_PRIO, 20);
-    if (ret != RT_EOK) {
-        rt_kprintf("[gateway] thread init failed: %d\n", ret);
-        return -1;
+    claw_thread_t t = claw_thread_create("gateway", gateway_thread_entry,
+                                          NULL, CLAW_GW_THREAD_STACK,
+                                          CLAW_GW_THREAD_PRIO);
+    if (!t) {
+        CLAW_LOGE(TAG, "thread create failed");
+        return CLAW_ERROR;
     }
 
-    rt_thread_startup(&gw_thread);
-    rt_kprintf("[gateway] initialized\n");
-    return 0;
+    CLAW_LOGI(TAG, "initialized");
+    return CLAW_OK;
 }
 
 int gateway_send(struct gateway_msg *msg)
 {
-    return rt_mq_send(&gw_mq, msg, sizeof(*msg));
+    return claw_mq_send(gw_mq, msg, sizeof(*msg), CLAW_NO_WAIT);
 }
-
-INIT_APP_EXPORT(gateway_init);
