@@ -1,4 +1,4 @@
-# rt-claw
+# RT-Claw — 让物理 AI 触手可及
 
 **中文** | [English](README.md)
 
