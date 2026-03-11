@@ -17,6 +17,10 @@ idf_component_register(
         "${RT_CLAW_ROOT}/src/services/ai"
     REQUIRES
         freertos
+        esp_eth
+        esp_netif
+        esp_event
+        esp_http_client
 )
 
 target_compile_definitions(${COMPONENT_LIB} PUBLIC CLAW_PLATFORM_ESP_IDF)
