@@ -17,7 +17,7 @@ menu "rt-claw Configuration"
 
         config CLAW_AI_MODEL
             string "LLM model name"
-            default "claude-sonnet-4-20250514"
+            default "claude-sonnet-4-6"
             help
                 Model identifier sent in the API request.
 
