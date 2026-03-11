@@ -77,8 +77,8 @@ static cJSON *do_api_call(cJSON *req_body, resp_ctx_t *ctx)
         .event_handler = on_http_event,
         .user_data = ctx,
         .crt_bundle_attach = esp_crt_bundle_attach,
-        .buffer_size = 2048,
-        .buffer_size_tx = 2048,
+        .buffer_size = 4096,
+        .buffer_size_tx = 4096,
     };
 
     esp_http_client_handle_t client = esp_http_client_init(&http_cfg);
@@ -243,6 +243,9 @@ int ai_chat(const char *user_msg, char *reply, size_t reply_size)
     int ret = CLAW_ERROR;
     reply[0] = '\0';
 
+    claw_lcd_status("Thinking ...");
+    claw_lcd_progress(0);
+
     for (int round = 0; round < MAX_TOOL_ROUNDS; round++) {
         cJSON *req = build_request(messages, tools);
         cJSON *resp = do_api_call(req, &ctx);
@@ -250,6 +253,8 @@ int ai_chat(const char *user_msg, char *reply, size_t reply_size)
 
         if (!resp) {
             snprintf(reply, reply_size, "[API request failed]");
+            claw_lcd_status("API request failed");
+            claw_lcd_progress(0);
             break;
         }
 
@@ -279,6 +284,8 @@ int ai_chat(const char *user_msg, char *reply, size_t reply_size)
              * messages, then loop for the next API call.
              */
             CLAW_LOGI(TAG, "tool_use round %d", round + 1);
+            claw_lcd_status("Tool call ...");
+            claw_lcd_progress((round + 1) * 100 / MAX_TOOL_ROUNDS);
 
             /* Append assistant message (with full content) */
             cJSON *asst_msg = cJSON_CreateObject();
@@ -300,6 +307,8 @@ int ai_chat(const char *user_msg, char *reply, size_t reply_size)
 
         /* end_turn or other stop reason — done */
         ret = CLAW_OK;
+        claw_lcd_status("Done");
+        claw_lcd_progress(100);
         cJSON_Delete(resp);
         break;
     }
@@ -316,9 +325,11 @@ int ai_engine_init(void)
 {
     if (strlen(AI_API_KEY) == 0) {
         CLAW_LOGW(TAG, "no API key — set via: idf.py menuconfig");
+        claw_lcd_status("No API key configured");
     } else {
         CLAW_LOGI(TAG, "engine ready (model: %s, tools: %d)",
                   AI_MODEL, claw_tools_count());
+        claw_lcd_status("AI ready - waiting for input");
     }
     return CLAW_OK;
 }

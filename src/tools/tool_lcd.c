@@ -581,6 +581,54 @@ void claw_tools_register_lcd(void)
         schema_lcd_circle, tool_lcd_circle);
 }
 
+/* -------------------- Status bar API -------------------- */
+
+#define STATUS_Y    220
+#define STATUS_H    20
+#define BAR_Y       232
+#define BAR_H       6
+#define BAR_X       4
+#define BAR_W       (LCD_WIDTH - 8)
+
+void claw_lcd_status(const char *msg)
+{
+    if (!s_fb || !msg) {
+        return;
+    }
+
+    /* Clear status strip */
+    lcd_draw_rect(0, STATUS_Y, LCD_WIDTH, STATUS_H,
+                  rgb888_to_565(0, 0, 40), 1);
+
+    lcd_draw_text(BAR_X, STATUS_Y + 2, msg,
+                  rgb888_to_565(0, 220, 255),
+                  rgb888_to_565(0, 0, 40), 1);
+}
+
+void claw_lcd_progress(int percent)
+{
+    if (!s_fb) {
+        return;
+    }
+    if (percent < 0) {
+        percent = 0;
+    } else if (percent > 100) {
+        percent = 100;
+    }
+
+    /* Background bar (dark gray) */
+    lcd_draw_rect(BAR_X, BAR_Y, BAR_W, BAR_H,
+                  rgb888_to_565(40, 40, 40), 1);
+
+    /* Filled portion (cyan) */
+    int filled_w = BAR_W * percent / 100;
+
+    if (filled_w > 0) {
+        lcd_draw_rect(BAR_X, BAR_Y, filled_w, BAR_H,
+                      rgb888_to_565(0, 200, 255), 1);
+    }
+}
+
 #else /* non-ESP-IDF */
 
 int claw_lcd_init(void)
@@ -590,6 +638,16 @@ int claw_lcd_init(void)
 
 void claw_tools_register_lcd(void)
 {
+}
+
+void claw_lcd_status(const char *msg)
+{
+    (void)msg;
+}
+
+void claw_lcd_progress(int percent)
+{
+    (void)percent;
 }
 
 #endif

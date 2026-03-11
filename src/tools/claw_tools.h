@@ -92,4 +92,14 @@ void claw_tools_register_lcd(void);
  */
 int claw_lcd_init(void);
 
+/**
+ * Show status message on LCD bottom area.
+ */
+void claw_lcd_status(const char *msg);
+
+/**
+ * Draw progress bar on LCD bottom strip (0-100%).
+ */
+void claw_lcd_progress(int percent);
+
 #endif /* __CLAW_TOOLS_H__ */
