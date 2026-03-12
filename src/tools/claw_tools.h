@@ -87,6 +87,11 @@ void claw_tools_register_system(void);
 void claw_tools_register_lcd(void);
 
 /**
+ * Register scheduler tools (schedule_task, remove_task).
+ */
+void claw_tools_register_sched(void);
+
+/**
  * Initialize LCD panel (QEMU RGB framebuffer).
  * Call before claw_tools_init() so the panel is ready.
  */

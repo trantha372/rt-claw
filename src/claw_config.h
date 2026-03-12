@@ -27,7 +27,7 @@
 /* Scheduler */
 #define CLAW_SCHED_MAX_TASKS        8
 #define CLAW_SCHED_TICK_MS          1000
-#define CLAW_SCHED_THREAD_STACK     4096
+#define CLAW_SCHED_THREAD_STACK     8192
 #define CLAW_SCHED_THREAD_PRIO      10
 
 #endif /* __CLAW_CONFIG_H__ */

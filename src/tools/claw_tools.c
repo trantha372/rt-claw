@@ -20,6 +20,7 @@ void claw_tools_init(void)
     claw_tools_register_gpio();
     claw_tools_register_system();
     claw_tools_register_lcd();
+    claw_tools_register_sched();
 
     CLAW_LOGI(TAG, "%d tools registered", s_tool_count);
 }
