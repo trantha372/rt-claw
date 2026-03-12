@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <strong>Making AI Assistants Cheap</strong>
+  <strong>Making AI Assistants Cheap Again</strong>
 </p>
 
 <p align="center">
