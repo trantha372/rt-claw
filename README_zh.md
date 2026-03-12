@@ -36,6 +36,8 @@ rt-claw 通过低成本嵌入式节点与蜂群组网，让智能从云端走向
 | OSAL | 一次编写，在 FreeRTOS 和 RT-Thread 上零修改运行 | 已完成 |
 | Gateway | 服务间线程安全的消息路由 | 已完成 |
 | 网络 | ESP32-C3 QEMU 上支持以太网 + HTTP 客户端；真实硬件使用 WiFi | 已完成 |
+| 多模型 API | 支持主流 LLM API：Claude、GPT、Gemini、DeepSeek、GLM（智谱）、MiniMax、Grok、Moonshot（Kimi）、百川、通义千问、豆包、Llama（Ollama） | 计划中 |
+| Web 配置页面 | 内置轻量 Web 页面，支持在线配置 API Key、选择模型、调整参数 | 计划中 |
 | 蜂群智能 | 节点发现、心跳检测、分布式任务调度 | 计划中 |
 | 技能记忆 | 节点学习并记忆常用操作模式 | 计划中 |
 | 定时任务 | 定时触发任务执行与周期性自动化 | 计划中 |

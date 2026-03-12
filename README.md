@@ -38,6 +38,8 @@ tasks in real time.
 | OSAL | Write once, run on FreeRTOS and RT-Thread with zero code changes | Done |
 | Gateway | Thread-safe message routing between services | Done |
 | Networking | Ethernet + HTTP client on ESP32-C3 QEMU; WiFi on real hardware | Done |
+| Multi-Model API | Support mainstream LLM APIs: Claude, GPT, Gemini, DeepSeek, GLM, MiniMax, Grok, Moonshot, Baichuan, Qwen, Doubao, Llama (Ollama) | Planned |
+| Web Config Portal | Lightweight built-in web page for configuring API keys, selecting models, and tuning parameters at runtime | Planned |
 | Swarm Intelligence | Node discovery, heartbeat, distributed task scheduling | Planned |
 | Skill Memory | Nodes learn and recall frequently used operation patterns | Planned |
 | Scheduled Tasks | Timer-driven task execution and periodic automation | Planned |

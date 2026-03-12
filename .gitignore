@@ -1,12 +1,20 @@
 # Build output
 build/
 *.o
+*.obj
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
 *.d
 *.bin
 *.elf
 *.map
 *.hex
 *.img
+*.srec
+*.lst
 
 # SCons
 .sconsign.dblite
@@ -17,6 +25,8 @@ __pycache__/
 sdkconfig
 sdkconfig.old
 managed_components/
+dependencies.lock
+.cache/
 
 # IDE
 .vscode/
@@ -31,6 +41,7 @@ managed_components/
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # RT-Thread env tool
 packages/
@@ -38,3 +49,6 @@ packages/
 # Auto-generated
 **/automac.h
 sd.bin
+
+# Claude Code
+.claude/
