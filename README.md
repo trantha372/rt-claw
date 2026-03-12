@@ -29,18 +29,19 @@ tasks in real time.
 
 ## Features
 
-- **LLM Chat Engine** — interactive conversation with Claude API over HTTP
-- **Tool Use** — LLM-driven hardware control (GPIO, system info, LCD) via
-  function calling
-- **LCD Graphics** — 320x240 RGB565 framebuffer with text, shapes, and
-  drawing primitives; AI agent can draw on screen via tool calls
-- **ESP-IDF Shell** — esp_console-based REPL with line editing, history,
-  and UTF-8 input support
-- **OSAL** — write once, run on FreeRTOS and RT-Thread with zero code changes
-- **Gateway** — thread-safe message routing between services
-- **Networking** — Ethernet + HTTP client on ESP32-C3 QEMU; WiFi on real
-  hardware
-- **Swarm** (planned) — node discovery, heartbeat, task distribution
+| Feature | Description | Status |
+|---------|-------------|--------|
+| LLM Chat Engine | Interactive conversation with Claude API over HTTP | Done |
+| Tool Use | LLM-driven hardware control (GPIO, system info, LCD) via function calling | Done |
+| LCD Graphics | 320x240 RGB565 framebuffer with text, shapes, and drawing primitives; AI agent can draw on screen via tool calls | Done |
+| ESP-IDF Shell | esp_console-based REPL with line editing, history, and UTF-8 input support | Done |
+| OSAL | Write once, run on FreeRTOS and RT-Thread with zero code changes | Done |
+| Gateway | Thread-safe message routing between services | Done |
+| Networking | Ethernet + HTTP client on ESP32-C3 QEMU; WiFi on real hardware | Done |
+| Swarm Intelligence | Node discovery, heartbeat, distributed task scheduling | Planned |
+| Skill Memory | Nodes learn and recall frequently used operation patterns | Planned |
+| Scheduled Tasks | Timer-driven task execution and periodic automation | Planned |
+| IM Integrations | Connect to Feishu, DingTalk, QQ, and Telegram as message channels | Planned |
 
 ## Architecture
 
