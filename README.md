@@ -105,14 +105,31 @@ sudo pacman -S --needed libgcrypt glib2 pixman sdl2 libslirp \
 ./tools/setup-esp-env.sh
 ```
 
-**3. Configure API key**
+**3. Choose a configuration preset**
+
+| Preset | File | Shell | Feishu | Description |
+|--------|------|-------|--------|-------------|
+| **Quick Demo** | `sdkconfig.defaults.demo` | On | Off | Interactive terminal with full AI agent |
+| **Feishu Bot** | `sdkconfig.defaults.feishu` | Off | On | Headless IM bot, saves RAM |
+| **Default** | `sdkconfig.defaults` | Off | Off | Minimal base for custom builds |
 
 ```bash
 source $HOME/esp/esp-idf/export.sh
 cd platform/esp32c3
-idf.py set-target esp32c3
 
-# Configure your LLM API key (required for AI chat)
+# Pick one:
+cp sdkconfig.defaults.demo sdkconfig.defaults    # Quick Demo
+# cp sdkconfig.defaults.feishu sdkconfig.defaults # Feishu Bot
+
+idf.py set-target esp32c3
+```
+
+All presets include: AI engine, Tool Use, swarm heartbeat, scheduler,
+LCD, skills, and boot-time AI connectivity test.
+
+**4. Configure API key**
+
+```bash
 idf.py menuconfig
 # Navigate: rt-claw Configuration → AI Engine
 #   - LLM API Key:          <your-api-key>
@@ -120,7 +137,7 @@ idf.py menuconfig
 #   - LLM model name:       claude-sonnet-4-6
 ```
 
-**4. (Optional) Configure Feishu bot**
+**5. (Optional) Configure Feishu bot**
 
 ```bash
 idf.py menuconfig
@@ -135,7 +152,7 @@ Create an app on [Feishu Open Platform](https://open.feishu.cn), enable
 `im.message.receive_v1`. The device establishes a WebSocket long connection
 on boot — no public IP required.
 
-**5. Build and run**
+**6. Build and run**
 
 ```bash
 # Build (auto-detects target if sdkconfig exists)

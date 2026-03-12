@@ -11,6 +11,8 @@
 #include "claw_tools.h"
 #include "ai_engine.h"
 
+#include <stdio.h>
+
 #ifdef CONFIG_CLAW_SCHED_ENABLE
 #include "scheduler.h"
 #endif
@@ -61,6 +63,23 @@ int claw_init(void)
     feishu_init();
     feishu_start();
 #endif
+
+    /* AI connectivity test */
+    {
+        char *buf = claw_malloc(512);
+        if (buf) {
+            claw_log_raw("  [boot] Testing AI connection ...\n");
+            if (ai_chat_raw("Report your status in one short sentence. "
+                            "Include your name, platform, and that "
+                            "you are online.",
+                            buf, 512) == CLAW_OK) {
+                claw_log_raw("  [boot] AI> %s\n", buf);
+            } else {
+                claw_log_raw("  [boot] AI test failed: %s\n", buf);
+            }
+            claw_free(buf);
+        }
+    }
 
     return CLAW_OK;
 }

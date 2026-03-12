@@ -365,18 +365,6 @@ static void shell_loop(void)
         return;
     }
 
-    /* Test AI connectivity */
-    printf("\n" CLR_YELLOW "  [boot] Testing AI connection ..."
-           CLR_RESET "\n");
-    if (ai_chat_raw("Report your status in one short sentence. "
-                     "Include your name, platform, and that you are online.",
-                     s_reply, REPLY_SIZE) == CLAW_OK) {
-        printf(CLR_GREEN "  [boot] AI> " CLR_RESET "%s\n", s_reply);
-    } else {
-        printf(CLR_RED "  [boot] AI test failed: " CLR_RESET
-               "%s\n", s_reply);
-    }
-
     printf("\n");
     printf(CLR_CYAN "  rt-claw chat" CLR_RESET
            "  (type /help for commands)\n");

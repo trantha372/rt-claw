@@ -102,14 +102,30 @@ sudo pacman -S --needed libgcrypt glib2 pixman sdl2 libslirp \
 ./tools/setup-esp-env.sh
 ```
 
-**3. 配置 API 密钥**
+**3. 选择配置预设**
+
+| 预设 | 文件 | 终端 | 飞书 | 说明 |
+|------|------|------|------|------|
+| **快速体验** | `sdkconfig.defaults.demo` | 开 | 关 | 交互式终端 + 完整 AI Agent |
+| **飞书机器人** | `sdkconfig.defaults.feishu` | 关 | 开 | 无终端 IM 机器人，节省内存 |
+| **默认** | `sdkconfig.defaults` | 关 | 关 | 最小基础配置，按需定制 |
 
 ```bash
 source $HOME/esp/esp-idf/export.sh
 cd platform/esp32c3
-idf.py set-target esp32c3
 
-# 配置 LLM API 密钥（AI 对话功能必需）
+# 选择一个预设：
+cp sdkconfig.defaults.demo sdkconfig.defaults    # 快速体验
+# cp sdkconfig.defaults.feishu sdkconfig.defaults # 飞书机器人
+
+idf.py set-target esp32c3
+```
+
+所有预设均包含：AI 引擎、Tool Use、蜂群心跳、调度器、LCD、技能系统、上电 AI 连接测试。
+
+**4. 配置 API 密钥**
+
+```bash
 idf.py menuconfig
 # 路径：rt-claw Configuration → AI Engine
 #   - LLM API Key:          <你的 API 密钥>
@@ -117,7 +133,7 @@ idf.py menuconfig
 #   - LLM model name:       claude-sonnet-4-6
 ```
 
-**4.（可选）配置飞书机器人**
+**5.（可选）配置飞书机器人**
 
 ```bash
 idf.py menuconfig
@@ -131,7 +147,7 @@ idf.py menuconfig
 订阅 `im.message.receive_v1` 事件。设备启动后自动建立 WebSocket 长连接，
 无需公网 IP。
 
-**5. 构建与运行**
+**6. 构建与运行**
 
 ```bash
 # 编译（自动检测 sdkconfig 中的目标芯片）
