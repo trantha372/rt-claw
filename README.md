@@ -50,6 +50,7 @@ tasks in real time.
 | Skill Memory | Nodes learn and recall frequently used operation patterns | Planned |
 | Scheduled Tasks | Timer-driven task execution and periodic automation | Planned |
 | IM Integrations | Connect to Feishu, DingTalk, QQ, and Telegram as message channels | Planned |
+| Claw Skill Provider | Serve as a skill for other Claws, giving them the ability to sense and control the physical world | Planned |
 
 ## Architecture
 
