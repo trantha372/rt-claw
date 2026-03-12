@@ -28,6 +28,14 @@
 #define INPUT_SIZE  256
 #define MAX_ARGS    8
 
+/* ANSI color codes */
+#define CLR_RESET   "\033[0m"
+#define CLR_RED     "\033[0;31m"
+#define CLR_GREEN   "\033[0;32m"
+#define CLR_YELLOW  "\033[0;33m"
+#define CLR_CYAN    "\033[0;36m"
+#define CLR_MAGENTA "\033[0;35m"
+
 #ifdef CLAW_PLATFORM_ESP_IDF
 
 static char *s_reply;
@@ -145,9 +153,9 @@ static void cmd_skill(int argc, char **argv)
     }
 
     if (ai_skill_execute(argv[1], params, s_reply, REPLY_SIZE) == CLAW_OK) {
-        printf("\n<rt-claw> %s\n", s_reply);
+        printf("\n" CLR_GREEN "<rt-claw> " CLR_RESET "%s\n", s_reply);
     } else {
-        printf("\n<error> %s\n", s_reply);
+        printf("\n" CLR_RED "<error> " CLR_RESET "%s\n", s_reply);
     }
 }
 
@@ -256,9 +264,9 @@ static void dispatch_command(char *line)
 static void do_chat(const char *msg)
 {
     if (ai_chat(msg, s_reply, REPLY_SIZE) == CLAW_OK) {
-        printf("\n<rt-claw> %s\n", s_reply);
+        printf("\n" CLR_GREEN "<rt-claw> " CLR_RESET "%s\n", s_reply);
     } else {
-        printf("\n<error> %s\n", s_reply);
+        printf("\n" CLR_RED "<error> " CLR_RESET "%s\n", s_reply);
     }
 }
 
@@ -276,22 +284,25 @@ static void shell_loop(void)
     }
 
     /* Test AI connectivity */
-    printf("\n  [boot] Testing AI connection ...\n");
+    printf("\n" CLR_YELLOW "  [boot] Testing AI connection ..."
+           CLR_RESET "\n");
     if (ai_chat_raw("Report your status in one short sentence. "
                      "Include your name, platform, and that you are online.",
                      s_reply, REPLY_SIZE) == CLAW_OK) {
-        printf("  [boot] AI> %s\n", s_reply);
+        printf(CLR_GREEN "  [boot] AI> " CLR_RESET "%s\n", s_reply);
     } else {
-        printf("  [boot] AI test failed: %s\n", s_reply);
+        printf(CLR_RED "  [boot] AI test failed: " CLR_RESET
+               "%s\n", s_reply);
     }
 
     printf("\n");
-    printf("  rt-claw chat  (type /help for commands)\n");
+    printf(CLR_CYAN "  rt-claw chat" CLR_RESET
+           "  (type /help for commands)\n");
     printf("  Direct input sends to AI, /command for system.\n");
     printf("\n");
 
     while (1) {
-        printf("\n<You> ");
+        printf("\n" CLR_CYAN "<You> " CLR_RESET);
         fflush(stdout);
         int len = uart_read_line(input, sizeof(input));
 
