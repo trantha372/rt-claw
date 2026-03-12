@@ -24,6 +24,10 @@
   <img src="images/demo.png" alt="RT-Claw 演示 — AI 通过 Tool Use 在 LCD 上绘图" width="700">
 </p>
 
+<p align="center">
+  <img src="images/feishu_talk1.png" alt="RT-Claw 飞书对话 — 通过飞书 IM 与 AI 助手交互" width="500">
+</p>
+
 [架构设计](docs/zh/architecture.md) · [ESP32-C3 QEMU 指南](docs/zh/esp32c3-qemu.md) · [贡献指南](docs/zh/contributing.md) · [编码风格](docs/zh/coding-style.md)
 
 ## 核心理念
