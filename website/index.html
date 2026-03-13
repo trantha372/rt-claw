@@ -700,7 +700,7 @@
     <div class="container">
         <div class="section-label reveal">Hardware</div>
         <h2 class="section-title reveal">Supported Platforms</h2>
-        <p class="section-subtitle reveal">Run on real hardware or emulate with QEMU — your choice.</p>
+        <p class="section-subtitle reveal">Run on real hardware or emulate with QEMU. Current QEMU support covers Espressif fork targets and vexpress-a9; upstream STM32 boards are excluded for now because QEMU still lacks working Ethernet there.</p>
         <div class="platforms-grid">
             <div class="platform-card reveal">
                 <h3>ESP32-S3</h3>
@@ -715,7 +715,7 @@
                     <li>Dual-core 240 MHz, 16 MB Flash + 8 MB PSRAM</li>
                     <li>WiFi + PSRAM for real-world deployment</li>
                     <li>Web Flash supported from this page</li>
-                    <li>QEMU emulation also available</li>
+                    <li>QEMU + open_eth networking available</li>
                 </ul>
             </div>
             <div class="platform-card reveal">
@@ -730,8 +730,8 @@
                 <ul>
                     <li>160 MHz single-core, 400 KB SRAM</li>
                     <li>Lowest cost option (~$1 modules)</li>
-                    <li>AI verified on QEMU</li>
-                    <li>Flash to real hardware or emulate</li>
+                    <li>AI + Ethernet verified on QEMU</li>
+                    <li>Flash to real hardware or emulate with open_eth</li>
                 </ul>
             </div>
             <div class="platform-card reveal">
@@ -745,8 +745,8 @@
                 <ul>
                     <li>RT-Thread v5.3.0 BSP</li>
                     <li>No hardware needed</li>
-                    <li>Boot verified on QEMU</li>
-                    <li>Great for development and testing</li>
+                    <li>Boot + Ethernet verified on QEMU</li>
+                    <li>lan9118 user-mode networking</li>
                 </ul>
             </div>
         </div>
@@ -1020,7 +1020,12 @@ window.flashFirmware = async function() {
             const partResp = await fetch(firmwareBase + part.path);
             if (!partResp.ok) throw new Error('Failed to download ' + part.path);
             const data = new Uint8Array(await partResp.arrayBuffer());
-            fileArray.push({ data: data, address: part.offset });
+            /* esptool-js internally uses binary strings (bstr); convert */
+            var bstr = '';
+            for (var j = 0; j < data.length; j++) {
+                bstr += String.fromCharCode(data[j]);
+            }
+            fileArray.push({ data: bstr, address: part.offset });
             espTerminal.writeLine('  ' + part.path + ': ' + data.length + ' bytes @ 0x' + part.offset.toString(16));
         }
 
