@@ -4,14 +4,14 @@
 # Unified QEMU launcher for rt-claw.
 #
 # Usage:
-#   ./tools/qemu-run.sh -m <machine> [options]
+#   ./tools/qemu-run.sh -M <machine> [options]
 #
 # Machines:
 #   qemu-a9   QEMU vexpress-a9 (RT-Thread, ARM Cortex-A9)
 #   esp32c3   QEMU ESP32-C3 (ESP-IDF, Espressif QEMU fork)
 #
 # Options:
-#   -m MACHINE   Target machine (required)
+#   -M MACHINE   Target machine (required)
 #   -g           Enable GDB server (debug mode, port 1234)
 #   --graphics   Enable LCD display window (esp32c3 only)
 #   -h           Show this help
@@ -45,10 +45,10 @@ _qemu_run() {
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
     machines="qemu-a9 esp32c3"
-    opts="-m -g --graphics -h --help"
+    opts="-M -g --graphics -h --help"
 
     case "$prev" in
-        -m) COMPREPLY=( $(compgen -W "$machines" -- "$cur") ); return ;;
+        -M) COMPREPLY=( $(compgen -W "$machines" -- "$cur") ); return ;;
     esac
 
     if [[ "$cur" == -* ]]; then
@@ -76,7 +76,7 @@ COMP_EOF
 
 while [ $# -gt 0 ]; do
     case "$1" in
-        -m)       MACHINE="$2"; shift 2 ;;
+        -M)       MACHINE="$2"; shift 2 ;;
         -g)       GDB_MODE=1; shift ;;
         --graphics) GRAPHICS=1; shift ;;
         --setup-completion) setup_completion ;;
@@ -86,7 +86,7 @@ while [ $# -gt 0 ]; do
 done
 
 if [ -z "$MACHINE" ]; then
-    echo "Error: -m <machine> is required."
+    echo "Error: -M <machine> is required."
     echo ""
     usage 1
 fi

@@ -36,7 +36,7 @@ qemu-a9:
 
 .PHONY: run-qemu-a9
 run-qemu-a9: qemu-a9
-	tools/qemu-run.sh -m qemu-a9
+	tools/qemu-run.sh -M qemu-a9
 
 # --- ESP32-C3 (ESP-IDF) ---
 # Prerequisite: source $$HOME/esp/esp-idf/export.sh
@@ -62,7 +62,7 @@ esp32c3:
 
 .PHONY: run-esp32c3
 run-esp32c3: esp32c3
-	tools/qemu-run.sh -m esp32c3
+	tools/qemu-run.sh -M esp32c3
 
 # --- Clean ---
 .PHONY: clean
