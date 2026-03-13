@@ -59,6 +59,9 @@ if _ai_model != ''
     platform_defs += ['-DCONFIG_CLAW_AI_MODEL="' + _ai_model + '"']
 endif
 
+# Unified header directory for all rt-claw public headers
+claw_inc = include_directories('include')
+
 subdir('vendor/cjson')
 subdir('osal')
-subdir('src')
+subdir('claw')

@@ -7,7 +7,7 @@
 
 #include "claw_os.h"
 #include "claw_config.h"
-#include "scheduler.h"
+#include "core/scheduler.h"
 
 #include <string.h>
 #include <stdio.h>

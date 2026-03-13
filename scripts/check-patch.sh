@@ -3,7 +3,7 @@
 #
 # check-patch.sh — run checkpatch.pl on rt-claw project files
 #
-# Only checks src/ and osal/ directories (app layer and framework layer).
+# Only checks claw/ and osal/ directories (app layer and framework layer).
 # Skips vendor/, platform/, and other directories.
 #
 # Usage:
@@ -20,7 +20,7 @@ CHECKPATCH="$SCRIPT_DIR/checkpatch.pl"
 CHECKPATCH_FLAGS="--no-tree"
 
 # Directories to check (app layer + framework layer)
-CHECK_DIRS="src/ osal/"
+CHECK_DIRS="claw/ osal/ include/"
 
 # Colors
 RED='\033[0;31m'

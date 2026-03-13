@@ -8,8 +8,8 @@
 #include "claw_os.h"
 #include "claw_config.h"
 #include "claw_net.h"
-#include "swarm.h"
-#include "gateway.h"
+#include "services/swarm/swarm.h"
+#include "core/gateway.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -17,7 +17,7 @@
 #define TAG "swarm"
 
 static struct swarm_node nodes[CLAW_SWARM_MAX_NODES];
-static int node_count = 0;
+static int node_count;
 static claw_mutex_t swarm_lock;
 static uint32_t s_self_id;
 

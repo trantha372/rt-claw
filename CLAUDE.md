@@ -4,7 +4,7 @@ rt-claw: OpenClaw-inspired AI assistant on embedded RTOS (FreeRTOS + RT-Thread) 
 
 ## Build
 
-Meson cross-compiles `src/` and `osal/` into static libraries, then each platform's
+Meson cross-compiles `claw/` and `osal/` into static libraries, then each platform's
 native build system (SCons/CMake) links them into the final firmware.
 All outputs go to `build/<platform>/`.
 
@@ -54,7 +54,7 @@ make run-esp32s3-qemu GDB=1           # debug mode (GDB port 1234)
 - Public API prefix: `claw_` (OSAL), subsystem prefix for services (e.g. `gateway_`)
 - Comments: `/* C style only */`, no `//`
 - Header guards: `CLAW_<PATH>_<NAME>_H`
-- Include order (src/): `claw_os.h` -> system headers -> project headers
+- Include order (claw/): `claw_os.h` -> system headers -> project headers
 - Always use braces for control flow blocks
 - License header on every source file: `SPDX-License-Identifier: MIT`
 
@@ -71,7 +71,7 @@ Subsystem prefixes: `osal`, `gateway`, `swarm`, `net`, `ai`, `platform`, `build`
 ## Checks
 
 ```bash
-# Style check (src/ and osal/ only)
+# Style check (claw/, osal/, include/ only)
 scripts/check-patch.sh                 # all source files
 scripts/check-patch.sh --staged        # staged changes only
 scripts/check-patch.sh --file <path>   # specific file
@@ -97,17 +97,17 @@ No unit test framework yet. Verify changes by:
 | Path | Purpose |
 |------|---------|
 | `Makefile` | Unified build entry point |
-| `meson.build` | Root Meson project (cross-compiles src/ + osal/) |
+| `meson.build` | Root Meson project (cross-compiles claw/ + osal/) |
 | `meson_options.txt` | Build options (osal backend, feature flags) |
 | `build/<platform>/` | Build outputs (gitignored) |
-| `osal/include/claw_os.h` | OSAL API (the only header core code includes) |
+| `include/` | Unified public headers (claw_os.h, claw_net.h, etc.) |
 | `osal/freertos/` | FreeRTOS OSAL implementation |
 | `osal/rtthread/` | RT-Thread OSAL implementation |
-| `src/claw_init.c` | Boot entry point |
-| `src/claw_config.h` | Compile-time constants (platform-independent) |
-| `src/core/gateway.*` | Message router |
-| `src/services/{ai,net,swarm}/` | Service modules |
-| `src/tools/` | Tool Use framework |
+| `claw/claw_init.c` | Boot entry point |
+| `include/claw_config.h` | Compile-time constants (platform-independent) |
+| `claw/core/gateway.c` | Message router |
+| `claw/services/{ai,net,swarm}/` | Service modules |
+| `claw/tools/` | Tool Use framework |
 | `platform/esp32c3-qemu/` | ESP32-C3 QEMU ESP-IDF project + auto-gen cross-file |
 | `platform/esp32s3-qemu/` | ESP32-S3 QEMU ESP-IDF project + auto-gen cross-file |
 | `platform/vexpress-a9-qemu/` | RT-Thread BSP + Meson cross-file |

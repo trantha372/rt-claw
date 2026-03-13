@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "claw_tools.h"
+#include "tools/claw_tools.h"
 #include "claw_config.h"
 
 #include <string.h>

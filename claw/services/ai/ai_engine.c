@@ -8,9 +8,9 @@
 #include "claw_os.h"
 #include "claw_config.h"
 #include "claw_net.h"
-#include "ai_engine.h"
-#include "ai_memory.h"
-#include "claw_tools.h"
+#include "services/ai/ai_engine.h"
+#include "services/ai/ai_memory.h"
+#include "tools/claw_tools.h"
 #include "cJSON.h"
 
 #include <string.h>

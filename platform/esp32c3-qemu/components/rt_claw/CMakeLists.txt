@@ -3,14 +3,7 @@ set(MESON_BUILD_DIR "${RT_CLAW_ROOT}/build/esp32c3-qemu")
 
 # Headers exported to dependent components (e.g. main)
 set(CLAW_INC_DIRS
-    "${RT_CLAW_ROOT}/osal/include"
-    "${RT_CLAW_ROOT}/src"
-    "${RT_CLAW_ROOT}/src/core"
-    "${RT_CLAW_ROOT}/src/services/swarm"
-    "${RT_CLAW_ROOT}/src/services/net"
-    "${RT_CLAW_ROOT}/src/services/ai"
-    "${RT_CLAW_ROOT}/src/services/im"
-    "${RT_CLAW_ROOT}/src/tools"
+    "${RT_CLAW_ROOT}/include"
 )
 
 # ESP-IDF component dependencies (needed for symbol resolution at link time)
@@ -47,7 +40,7 @@ target_compile_definitions(${COMPONENT_LIB} PUBLIC CLAW_PLATFORM_ESP_IDF)
 
 # Merge Meson pre-built objects into the component library so they
 # participate in ESP-IDF's normal link group (resolves cross-references).
-file(GLOB _rtclaw_objs "${MESON_BUILD_DIR}/src/librtclaw.a.p/*.o")
+file(GLOB _rtclaw_objs "${MESON_BUILD_DIR}/claw/librtclaw.a.p/*.o")
 file(GLOB _osal_objs   "${MESON_BUILD_DIR}/osal/libosal.a.p/*.o")
 file(GLOB _cjson_objs  "${MESON_BUILD_DIR}/vendor/cjson/libcjson.a.p/*.o")
 

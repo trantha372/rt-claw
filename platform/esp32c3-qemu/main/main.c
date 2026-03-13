@@ -8,7 +8,7 @@
 
 #include "claw_os.h"
 #include "claw_init.h"
-#include "ai_engine.h"
+#include "services/ai/ai_engine.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -19,16 +19,16 @@
 #endif
 
 #ifdef CONFIG_CLAW_SHELL_ENABLE
-#include "ai_memory.h"
+#include "services/ai/ai_memory.h"
 #include "driver/uart.h"
 #ifdef CONFIG_CLAW_SKILL_ENABLE
-#include "ai_skill.h"
+#include "services/ai/ai_skill.h"
 #endif
 #ifdef CONFIG_CLAW_SCHED_ENABLE
-#include "scheduler.h"
+#include "core/scheduler.h"
 #endif
 #ifdef CONFIG_CLAW_SWARM_ENABLE
-#include "swarm.h"
+#include "services/swarm/swarm.h"
 #endif
 #endif /* CONFIG_CLAW_SHELL_ENABLE */
 

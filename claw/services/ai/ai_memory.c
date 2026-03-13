@@ -7,7 +7,7 @@
 
 #include "claw_os.h"
 #include "claw_config.h"
-#include "ai_memory.h"
+#include "services/ai/ai_memory.h"
 
 #include <string.h>
 #include <stdio.h>

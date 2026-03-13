@@ -34,10 +34,10 @@ Signed-off-by: Your Name <your@email.com>
 | Prefix     | Scope                                     |
 |------------|-------------------------------------------|
 | `osal`     | OS abstraction layer (`osal/`)            |
-| `gateway`  | Message routing (`src/core/gateway.*`)    |
-| `swarm`    | Swarm service (`src/services/swarm/`)     |
-| `net`      | Network service (`src/services/net/`)     |
-| `ai`       | AI engine (`src/services/ai/`)            |
+| `gateway`  | Message routing (`claw/core/gateway.*`)   |
+| `swarm`    | Swarm service (`claw/services/swarm/`)    |
+| `net`      | Network service (`claw/services/net/`)    |
+| `ai`       | AI engine (`claw/services/ai/`)           |
 | `platform` | Platform-specific changes (`platform/`)   |
 | `build`    | Build system (SCons, CMake, scripts)      |
 | `docs`     | Documentation changes                     |
@@ -82,14 +82,14 @@ Key points:
 ### Style Checker
 
 ```bash
-# Check all source in scope (src/ + osal/)
+# Check all source in scope (claw/ + osal/ + include/)
 scripts/check-patch.sh
 
 # Check staged changes (useful before committing)
 scripts/check-patch.sh --staged
 
 # Check specific files
-scripts/check-patch.sh --file src/core/gateway.c
+scripts/check-patch.sh --file claw/core/gateway.c
 ```
 
 ### Sign-off Checker
@@ -112,7 +112,7 @@ scripts/install-hooks.sh --remove # remove
 ```
 
 Hooks installed:
-- **pre-commit**: runs `check-patch.sh --staged` on code in `src/` and `osal/`
+- **pre-commit**: runs `check-patch.sh --staged` on code in `claw/`, `osal/`, and `include/`
 - **commit-msg**: validates commit message format and Signed-off-by
 
 ## Patch Guidelines

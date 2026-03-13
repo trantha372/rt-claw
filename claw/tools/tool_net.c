@@ -5,7 +5,7 @@
  * Network tools — HTTP GET/POST for AI agent.
  */
 
-#include "claw_tools.h"
+#include "tools/claw_tools.h"
 #include "claw_config.h"
 
 #include <string.h>

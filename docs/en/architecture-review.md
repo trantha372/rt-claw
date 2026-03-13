@@ -71,13 +71,13 @@ prefix is reserved by the C standard for the implementation):
 
 | File | Current | Should Be |
 |------|---------|-----------|
-| `osal/include/claw_os.h` | `__CLAW_OS_H__` | `CLAW_OS_H` |
-| `src/claw_init.h` | `__CLAW_INIT_H__` | `CLAW_INIT_H` |
-| `src/core/gateway.h` | `__CLAW_GATEWAY_H__` | `CLAW_CORE_GATEWAY_H` |
-| `src/services/net/net_service.h` | `__CLAW_NET_SERVICE_H__` | `CLAW_SERVICES_NET_SERVICE_H` |
-| `src/services/swarm/swarm.h` | `__CLAW_SWARM_H__` | `CLAW_SERVICES_SWARM_H` |
-| `src/services/ai/ai_engine.h` | `__CLAW_AI_ENGINE_H__` | `CLAW_SERVICES_AI_ENGINE_H` |
-| `src/tools/claw_tools.h` | `__CLAW_TOOLS_H__` | `CLAW_TOOLS_H` |
+| `include/claw_os.h` | `__CLAW_OS_H__` | `CLAW_OS_H` |
+| `include/claw_init.h` | `__CLAW_INIT_H__` | `CLAW_INIT_H` |
+| `include/core/gateway.h` | `__CLAW_GATEWAY_H__` | `CLAW_CORE_GATEWAY_H` |
+| `include/services/net/net_service.h` | `__CLAW_NET_SERVICE_H__` | `CLAW_SERVICES_NET_SERVICE_H` |
+| `include/services/swarm/swarm.h` | `__CLAW_SWARM_H__` | `CLAW_SERVICES_SWARM_H` |
+| `include/services/ai/ai_engine.h` | `__CLAW_AI_ENGINE_H__` | `CLAW_SERVICES_AI_ENGINE_H` |
+| `include/tools/claw_tools.h` | `__CLAW_TOOLS_H__` | `CLAW_TOOLS_H` |
 
 **Fix:** Rename all header guards to match the coding standard.
 
@@ -98,7 +98,7 @@ callers who want silence can explicitly disable it.
 #### P2-1: OSAL Network Abstraction Missing
 
 **Problem:** `claw_os.h` covers threads, sync, memory, logging, and time
-— but not networking. All network-dependent code in `src/` uses `#ifdef`
+— but not networking. All network-dependent code in `claw/` uses `#ifdef`
 platform switches:
 
 - `ai_engine.c` — ~350 lines of platform-specific HTTP transport
@@ -106,7 +106,7 @@ platform switches:
 - `swarm.c` — platform-specific node ID generation and socket includes
 
 This undermines the OSAL's goal: "all core code depends only on
-`claw_os.h`".
+`include/claw_os.h`".
 
 **Recommended approach:** Add a minimal HTTP client API to OSAL:
 

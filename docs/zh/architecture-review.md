@@ -57,13 +57,13 @@ TimerHandle_t t = xTimerCreate(name, pdMS_TO_TICKS(period_ms),
 
 | 文件 | 当前 | 应改为 |
 |------|------|--------|
-| `osal/include/claw_os.h` | `__CLAW_OS_H__` | `CLAW_OS_H` |
-| `src/claw_init.h` | `__CLAW_INIT_H__` | `CLAW_INIT_H` |
-| `src/core/gateway.h` | `__CLAW_GATEWAY_H__` | `CLAW_CORE_GATEWAY_H` |
-| `src/services/net/net_service.h` | `__CLAW_NET_SERVICE_H__` | `CLAW_SERVICES_NET_SERVICE_H` |
-| `src/services/swarm/swarm.h` | `__CLAW_SWARM_H__` | `CLAW_SERVICES_SWARM_H` |
-| `src/services/ai/ai_engine.h` | `__CLAW_AI_ENGINE_H__` | `CLAW_SERVICES_AI_ENGINE_H` |
-| `src/tools/claw_tools.h` | `__CLAW_TOOLS_H__` | `CLAW_TOOLS_H` |
+| `include/claw_os.h` | `__CLAW_OS_H__` | `CLAW_OS_H` |
+| `include/claw_init.h` | `__CLAW_INIT_H__` | `CLAW_INIT_H` |
+| `include/core/gateway.h` | `__CLAW_GATEWAY_H__` | `CLAW_CORE_GATEWAY_H` |
+| `include/services/net/net_service.h` | `__CLAW_NET_SERVICE_H__` | `CLAW_SERVICES_NET_SERVICE_H` |
+| `include/services/swarm/swarm.h` | `__CLAW_SWARM_H__` | `CLAW_SERVICES_SWARM_H` |
+| `include/services/ai/ai_engine.h` | `__CLAW_AI_ENGINE_H__` | `CLAW_SERVICES_AI_ENGINE_H` |
+| `include/tools/claw_tools.h` | `__CLAW_TOOLS_H__` | `CLAW_TOOLS_H` |
 
 **修复：** 统一重命名所有 header guard。
 
@@ -82,7 +82,7 @@ TimerHandle_t t = xTimerCreate(name, pdMS_TO_TICKS(period_ms),
 #### P2-1：OSAL 缺少网络抽象
 
 **问题：** `claw_os.h` 覆盖了线程/同步/内存/日志/时间，但没有网络 API。
-`src/` 中所有网络相关代码都使用 `#ifdef` 平台分支：
+`claw/` 中所有网络相关代码都使用 `#ifdef` 平台分支：
 
 - `ai_engine.c` — ~350 行平台特定 HTTP 传输
 - `net_service.c` — ~240 行，各平台完全不同

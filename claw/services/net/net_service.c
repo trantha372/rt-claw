@@ -6,7 +6,7 @@
  */
 
 #include "claw_os.h"
-#include "net_service.h"
+#include "services/net/net_service.h"
 
 #include <string.h>
 

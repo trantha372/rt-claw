@@ -16,7 +16,7 @@ rt-claw 将 OpenClaw 个人助手概念引入嵌入式 RTOS 设备。
 关键架构决策：所有 rt-claw 核心代码仅依赖 `claw_os.h`。
 
 ```
-src/*.c  --->  #include "claw_os.h"  (编译时接口)
+claw/*.c  --->  #include "claw_os.h"  (编译时接口)
                         |
           +-------------+-------------+
           |                           |
@@ -35,7 +35,7 @@ src/*.c  --->  #include "claw_os.h"  (编译时接口)
 
 ## 核心服务
 
-### 网关（src/core/gateway）
+### 网关（claw/core/gateway）
 
 受 OpenClaw Gateway 架构启发的中央消息路由器。
 
@@ -43,7 +43,7 @@ src/*.c  --->  #include "claw_os.h"  (编译时接口)
 - 基于通道的路由（源 -> 目标）
 - 消息类型：DATA、CMD、EVENT、SWARM
 
-### 蜂群服务（src/services/swarm）
+### 蜂群服务（claw/services/swarm）
 
 节点发现与协调，用于构建 rt-claw 设备网格。
 
@@ -53,7 +53,7 @@ src/*.c  --->  #include "claw_os.h"  (编译时接口)
 - 能力广播
 - 跨蜂群任务分发
 
-### 网络服务（src/services/net）
+### 网络服务（claw/services/net）
 
 平台感知的网络支持：
 
@@ -61,7 +61,7 @@ src/*.c  --->  #include "claw_os.h"  (编译时接口)
 - QEMU-A9：以太网（smc911x）+ lwIP + MQTT
 - 通用：基于 MQTT topic 的通道系统（映射到 OpenClaw 的多通道架构）
 
-### AI 引擎（src/services/ai）
+### AI 引擎（claw/services/ai）
 
 LLM API 客户端，支持 Tool Use：
 

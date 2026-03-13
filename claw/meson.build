@@ -1,13 +1,3 @@
-src_inc = include_directories(
-    '.',
-    'core',
-    'services/swarm',
-    'services/net',
-    'services/ai',
-    'services/im',
-    'tools',
-)
-
 src_files = files(
     'claw_init.c',
     'core/gateway.c',
@@ -51,12 +41,12 @@ if get_option('tool_net')
 endif
 
 rtclaw_lib = static_library('rtclaw', src_files,
-    include_directories: [src_inc] + platform_incs,
+    include_directories: [claw_inc] + platform_incs,
     dependencies: [osal_dep, cjson_dep],
     c_args: feature_defs,
 )
 
 rtclaw_dep = declare_dependency(
     link_with: rtclaw_lib,
-    include_directories: [src_inc, osal_inc],
+    include_directories: claw_inc,
 )

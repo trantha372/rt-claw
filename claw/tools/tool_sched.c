@@ -10,9 +10,9 @@
  */
 
 #include "claw_os.h"
-#include "claw_tools.h"
-#include "scheduler.h"
-#include "ai_engine.h"
+#include "tools/claw_tools.h"
+#include "core/scheduler.h"
+#include "services/ai/ai_engine.h"
 
 #include <string.h>
 #include <stdio.h>

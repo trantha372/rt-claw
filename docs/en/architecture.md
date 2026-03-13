@@ -16,7 +16,7 @@ on FreeRTOS (ESP-IDF) and RT-Thread with zero modification.
 The key architectural decision: all rt-claw core code depends only on `claw_os.h`.
 
 ```
-src/*.c  --->  #include "claw_os.h"  (compile-time interface)
+claw/*.c  --->  #include "claw_os.h"  (compile-time interface)
                         |
           +-------------+-------------+
           |                           |
@@ -35,7 +35,7 @@ Zero runtime overhead. No function pointers. No conditional compilation in core 
 
 ## Core Services
 
-### Gateway (src/core/gateway)
+### Gateway (claw/core/gateway)
 
 Central message router inspired by OpenClaw's Gateway architecture.
 
@@ -43,7 +43,7 @@ Central message router inspired by OpenClaw's Gateway architecture.
 - Channel-based routing (source -> destination)
 - Message types: DATA, CMD, EVENT, SWARM
 
-### Swarm Service (src/services/swarm)
+### Swarm Service (claw/services/swarm)
 
 Node discovery and coordination for building a mesh of rt-claw devices.
 
@@ -53,7 +53,7 @@ Node discovery and coordination for building a mesh of rt-claw devices.
 - Capability advertisement
 - Task distribution across the swarm
 
-### Network Service (src/services/net)
+### Network Service (claw/services/net)
 
 Platform-aware networking:
 
@@ -61,7 +61,7 @@ Platform-aware networking:
 - QEMU-A9: Ethernet (smc911x) + lwIP + MQTT
 - Common: MQTT topic-based channel system (maps to OpenClaw's multi-channel)
 
-### AI Engine (src/services/ai)
+### AI Engine (claw/services/ai)
 
 LLM API client with Tool Use support:
 

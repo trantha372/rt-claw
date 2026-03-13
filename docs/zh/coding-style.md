@@ -3,7 +3,7 @@
 [English](../en/coding-style.md) | **中文**
 
 本文定义 rt-claw 项目的 C 编码风格。
-适用于 `src/` 和 `osal/` 下的所有代码——即平台无关的核心代码和操作系统抽象层。
+适用于 `claw/`、`osal/` 和 `include/` 下的所有代码——即平台无关的核心代码和操作系统抽象层。
 
 提交前请使用 `scripts/check-patch.sh` 验证代码风格。
 
@@ -11,7 +11,8 @@
 
 | 目录        | 是否检查 | 说明                              |
 |-------------|----------|-----------------------------------|
-| `src/`      | 是       | 核心服务、网关、AI 引擎           |
+| `claw/`     | 是       | 核心服务、网关、AI 引擎           |
+| `include/`  | 是       | 公共头文件                        |
 | `osal/`     | 是       | 操作系统抽象层                    |
 | `platform/` | 否       | 平台特定 BSP / 构建文件           |
 | `vendor/`   | 否       | 第三方 RTOS 源码                  |
@@ -108,10 +109,10 @@ if (ret == CLAW_OK) {    /* 好 — 读起来自然 */
 ## 头文件包含顺序
 
 ```c
-#include "claw_os.h"     /* OSAL 头文件优先（src/ 中的源文件） */
+#include "claw_os.h"     /* OSAL 头文件优先（claw/ 中的源文件） */
 #include <stdint.h>       /* 然后系统 / 标准头文件 */
 #include <string.h>
-#include "gateway.h"      /* 最后项目头文件 */
+#include "core/gateway.h" /* 最后项目头文件 */
 ```
 
 OSAL 实现文件（`osal/freertos/`、`osal/rtthread/`）中，
@@ -137,7 +138,7 @@ RTOS 头文件在 OSAL 头文件之前：
 ## 内存管理
 
 通过 OSAL 使用 RTOS 提供的内存分配，或标准 `malloc`/`free`。
-`src/` 代码中禁止直接调用 RTOS 特定的分配器。
+`claw/` 代码中禁止直接调用 RTOS 特定的分配器。
 
 ## 字符串安全
 
@@ -172,11 +173,11 @@ RTOS 头文件在 OSAL 头文件之前：
 ## 运行检查工具
 
 ```bash
-# 检查 src/ 和 osal/ 下的所有文件
+# 检查 claw/、osal/ 和 include/ 下的所有文件
 scripts/check-patch.sh
 
 # 检查指定文件
-scripts/check-patch.sh --file src/core/gateway.c osal/include/claw_os.h
+scripts/check-patch.sh --file claw/core/gateway.c include/claw_os.h
 
 # 仅检查暂存区变更
 scripts/check-patch.sh --staged

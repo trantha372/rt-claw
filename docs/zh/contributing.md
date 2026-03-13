@@ -34,10 +34,10 @@ Signed-off-by: Your Name <your@email.com>
 | 前缀       | 范围                                      |
 |------------|-------------------------------------------|
 | `osal`     | 操作系统抽象层（`osal/`）                 |
-| `gateway`  | 消息路由（`src/core/gateway.*`）          |
-| `swarm`    | 蜂群服务（`src/services/swarm/`）         |
-| `net`      | 网络服务（`src/services/net/`）           |
-| `ai`       | AI 引擎（`src/services/ai/`）            |
+| `gateway`  | 消息路由（`claw/core/gateway.*`）         |
+| `swarm`    | 蜂群服务（`claw/services/swarm/`）        |
+| `net`      | 网络服务（`claw/services/net/`）          |
+| `ai`       | AI 引擎（`claw/services/ai/`）           |
 | `platform` | 平台特定变更（`platform/`）               |
 | `build`    | 构建系统（SCons、CMake、脚本）            |
 | `docs`     | 文档变更                                  |
@@ -82,14 +82,14 @@ Signed-off-by: Chao Liu <chao.liu.zevorn@gmail.com>
 ### 风格检查
 
 ```bash
-# 检查范围内的所有源文件（src/ + osal/）
+# 检查范围内的所有源文件（claw/ + osal/ + include/）
 scripts/check-patch.sh
 
 # 检查暂存区变更（提交前推荐使用）
 scripts/check-patch.sh --staged
 
 # 检查指定文件
-scripts/check-patch.sh --file src/core/gateway.c
+scripts/check-patch.sh --file claw/core/gateway.c
 ```
 
 ### 签名检查
@@ -112,7 +112,7 @@ scripts/install-hooks.sh --remove # 卸载
 ```
 
 安装的 hooks：
-- **pre-commit**：对 `src/` 和 `osal/` 中的暂存变更运行 `check-patch.sh --staged`
+- **pre-commit**：对 `claw/`、`osal/` 和 `include/` 中的暂存变更运行 `check-patch.sh --staged`
 - **commit-msg**：验证提交信息格式和 Signed-off-by
 
 ## 补丁准则

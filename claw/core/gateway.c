@@ -4,7 +4,7 @@
  */
 
 #include "claw_os.h"
-#include "gateway.h"
+#include "core/gateway.h"
 
 #define TAG "gateway"
 

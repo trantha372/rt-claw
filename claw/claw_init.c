@@ -6,25 +6,25 @@
 #include "claw_os.h"
 #include "claw_config.h"
 #include "claw_init.h"
-#include "claw_service.h"
-#include "gateway.h"
-#include "net_service.h"
-#include "claw_tools.h"
-#include "ai_engine.h"
+#include "core/claw_service.h"
+#include "core/gateway.h"
+#include "services/net/net_service.h"
+#include "tools/claw_tools.h"
+#include "services/ai/ai_engine.h"
 
 #include <stdio.h>
 
 #ifdef CONFIG_CLAW_SCHED_ENABLE
-#include "scheduler.h"
+#include "core/scheduler.h"
 #endif
 #ifdef CONFIG_CLAW_SWARM_ENABLE
-#include "swarm.h"
+#include "services/swarm/swarm.h"
 #endif
 #ifdef CONFIG_CLAW_SKILL_ENABLE
-#include "ai_skill.h"
+#include "services/ai/ai_skill.h"
 #endif
 #ifdef CONFIG_CLAW_FEISHU_ENABLE
-#include "feishu.h"
+#include "services/im/feishu.h"
 #endif
 
 #define TAG "init"

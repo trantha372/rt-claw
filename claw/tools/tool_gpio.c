@@ -5,7 +5,7 @@
  * GPIO tools — expose GPIO control as LLM-callable tools.
  */
 
-#include "claw_tools.h"
+#include "tools/claw_tools.h"
 
 #include <string.h>
 #include <stdio.h>

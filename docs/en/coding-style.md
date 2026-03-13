@@ -3,8 +3,8 @@
 **English** | [中文](../zh/coding-style.md)
 
 This document defines the C coding style for the rt-claw project.
-It applies to all code under `src/` and `osal/` — the platform-independent
-core and the OS abstraction layer.
+It applies to all code under `claw/`, `osal/`, and `include/` — the
+platform-independent core and the OS abstraction layer.
 
 Use `scripts/check-patch.sh` to verify compliance before submitting.
 
@@ -12,7 +12,8 @@ Use `scripts/check-patch.sh` to verify compliance before submitting.
 
 | Directory   | Checked | Notes                              |
 |-------------|---------|-------------------------------------|
-| `src/`      | Yes     | Core services, gateway, AI engine   |
+| `claw/`     | Yes     | Core services, gateway, AI engine   |
+| `include/`  | Yes     | Public headers                      |
 | `osal/`     | Yes     | OS abstraction layer                |
 | `platform/` | No      | Platform-specific BSP/build files   |
 | `vendor/`   | No      | Third-party RTOS source code        |
@@ -110,10 +111,10 @@ Multi-line comments:
 ## Include Order
 
 ```c
-#include "claw_os.h"     /* OSAL header first (for source in src/) */
+#include "claw_os.h"     /* OSAL header first (for source in claw/) */
 #include <stdint.h>       /* then system/standard headers */
 #include <string.h>
-#include "gateway.h"      /* then project headers */
+#include "core/gateway.h" /* then project headers */
 ```
 
 For OSAL implementation files (`osal/freertos/`, `osal/rtthread/`),
@@ -140,7 +141,7 @@ what GCC and Clang both support.
 ## Memory Management
 
 Use RTOS-provided allocation through OSAL, or standard `malloc`/`free`.
-Never call RTOS-specific allocators directly from `src/` code.
+Never call RTOS-specific allocators directly from `claw/` code.
 
 ## String Safety
 
@@ -175,11 +176,11 @@ Never call RTOS-specific allocators directly from `src/` code.
 ## Running the Checker
 
 ```bash
-# Check all files in src/ and osal/
+# Check all files in claw/, osal/, and include/
 scripts/check-patch.sh
 
 # Check specific files
-scripts/check-patch.sh --file src/core/gateway.c osal/include/claw_os.h
+scripts/check-patch.sh --file claw/core/gateway.c include/claw_os.h
 
 # Check staged changes only
 scripts/check-patch.sh --staged

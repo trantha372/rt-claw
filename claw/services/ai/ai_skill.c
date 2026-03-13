@@ -6,9 +6,9 @@
  */
 
 #include "claw_os.h"
-#include "ai_skill.h"
-#include "ai_engine.h"
-#include "claw_tools.h"
+#include "services/ai/ai_skill.h"
+#include "services/ai/ai_engine.h"
+#include "tools/claw_tools.h"
 
 #include <string.h>
 #include <stdio.h>
