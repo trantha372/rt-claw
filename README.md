@@ -94,11 +94,11 @@ scenario without writing, compiling, or flashing embedded code again.
 sudo apt install git wget flex bison gperf python3 python3-venv \
     cmake ninja-build ccache libffi-dev libssl-dev dfu-util \
     libusb-1.0-0 libgcrypt20-dev libglib2.0-dev libpixman-1-dev \
-    libsdl2-dev libslirp-dev
+    libsdl2-dev libslirp-dev meson
 
 # Arch Linux
 sudo pacman -S --needed libgcrypt glib2 pixman sdl2 libslirp \
-    python cmake ninja gcc git wget flex bison
+    python cmake ninja gcc git wget flex bison meson
 ```
 
 **2. Install ESP-IDF + QEMU**
@@ -134,7 +134,7 @@ LCD, skills, and boot-time AI connectivity test.
 
 ```bash
 idf.py menuconfig
-# Navigate: rt-claw Configuration → AI Engine
+# Navigate: Component config → rt-claw Configuration → AI Engine
 #   - LLM API Key:          <your-api-key>
 #   - LLM API endpoint URL: https://api.anthropic.com/v1/messages
 #   - LLM model name:       claude-sonnet-4-6
@@ -144,7 +144,7 @@ idf.py menuconfig
 
 ```bash
 idf.py menuconfig
-# Navigate: rt-claw Configuration → Feishu (Lark) Integration
+# Navigate: Component config → rt-claw Configuration → Feishu (Lark) Integration
 #   - Enable Feishu IM integration: [*]
 #   - Feishu App ID:     <your-app-id>
 #   - Feishu App Secret: <your-app-secret>
