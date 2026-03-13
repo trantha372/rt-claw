@@ -68,7 +68,7 @@ scenario without writing, compiling, or flashing embedded code again.
 +-----------------+---------------------------------+
 | FreeRTOS (IDF)  |          RT-Thread              |
 +-----------------+---------------------------------+
-| ESP32-C3        |  QEMU vexpress-a9               |
+| ESP32-C3 / S3   |  QEMU vexpress-a9               |
 | WiFi / BLE      |  Ethernet / UART                |
 +-----------------+---------------------------------+
 ```
@@ -78,7 +78,9 @@ scenario without writing, compiling, or flashing embedded code again.
 | Platform | Target | RTOS | Build | Status |
 |----------|--------|------|-------|--------|
 | ESP32-C3 | QEMU (Espressif fork) | ESP-IDF + FreeRTOS | Meson + CMake | AI verified |
+| ESP32-S3 | QEMU (Espressif fork) | ESP-IDF + FreeRTOS | Meson + CMake | AI verified |
 | ESP32-C3 | Real hardware | ESP-IDF + FreeRTOS | Meson + CMake | Untested |
+| ESP32-S3 | Real hardware | ESP-IDF + FreeRTOS | Meson + CMake | Untested |
 | QEMU vexpress-a9 | QEMU | RT-Thread | Meson + SCons | AI verified |
 
 ## Quick Start
