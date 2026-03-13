@@ -188,7 +188,7 @@ make run-vexpress-a9-qemu
 ```
 rt-claw/
 ├── meson.build                  # Meson 构建定义（交叉编译 src + osal）
-├── meson.options                # Meson 构建选项（OSAL 后端、功能开关、AI 配置）
+├── meson_options.txt                # Meson 构建选项（OSAL 后端、功能开关、AI 配置）
 ├── Makefile                     # 统一构建入口（make esp32c3-qemu / make vexpress-a9-qemu）
 ├── osal/                        # 操作系统抽象层
 │   ├── include/claw_os.h       #   统一 RTOS API

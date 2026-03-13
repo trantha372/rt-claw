@@ -193,7 +193,7 @@ make run-vexpress-a9-qemu
 ```
 rt-claw/
 ├── meson.build                  # Meson build definition (cross-compiles src + osal)
-├── meson.options                # Meson build options (osal backend, features, AI config)
+├── meson_options.txt                # Meson build options (osal backend, features, AI config)
 ├── Makefile                     # Unified build entry (make esp32c3-qemu / make vexpress-a9-qemu)
 ├── osal/                        # OS Abstraction Layer
 │   ├── include/claw_os.h       #   Unified RTOS API

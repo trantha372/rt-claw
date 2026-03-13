@@ -98,7 +98,7 @@ No unit test framework yet. Verify changes by:
 |------|---------|
 | `Makefile` | Unified build entry point |
 | `meson.build` | Root Meson project (cross-compiles src/ + osal/) |
-| `meson.options` | Build options (osal backend, feature flags) |
+| `meson_options.txt` | Build options (osal backend, feature flags) |
 | `build/<platform>/` | Build outputs (gitignored) |
 | `osal/include/claw_os.h` | OSAL API (the only header core code includes) |
 | `osal/freertos/` | FreeRTOS OSAL implementation |
