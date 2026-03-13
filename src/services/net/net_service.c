@@ -27,6 +27,10 @@ static claw_sem_t s_got_ip_sem;
 static void eth_event_handler(void *arg, esp_event_base_t event_base,
                               int32_t event_id, void *event_data)
 {
+    (void)arg;
+    (void)event_base;
+    (void)event_data;
+
     switch (event_id) {
     case ETHERNET_EVENT_CONNECTED:
         CLAW_LOGI(TAG, "Ethernet link up");
@@ -42,6 +46,9 @@ static void eth_event_handler(void *arg, esp_event_base_t event_base,
 static void ip_event_handler(void *arg, esp_event_base_t event_base,
                              int32_t event_id, void *event_data)
 {
+    (void)arg;
+    (void)event_base;
+
     if (event_id == IP_EVENT_ETH_GOT_IP) {
         ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
         CLAW_LOGI(TAG, "got ip: " IPSTR, IP2STR(&event->ip_info.ip));
