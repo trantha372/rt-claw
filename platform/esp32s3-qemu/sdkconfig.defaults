@@ -43,5 +43,5 @@ CONFIG_CLAW_AI_MODEL="claude-sonnet-4-6"
 
 # ---- Feishu (Lark) ----
 CONFIG_CLAW_FEISHU_ENABLE=y
-CONFIG_CLAW_FEISHU_APP_ID="REDACTED_APP_ID"
-CONFIG_CLAW_FEISHU_APP_SECRET="REDACTED_APP_SECRET"
+# Set App ID and Secret via: idf.py menuconfig -> rt-claw -> Feishu
+
