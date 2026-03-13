@@ -115,13 +115,14 @@ sudo pacman -S --needed libgcrypt glib2 pixman sdl2 libslirp \
 
 ```bash
 source $HOME/esp/esp-idf/export.sh
-cd platform/esp32c3-qemu
 
 # 选择一个预设：
-cp sdkconfig.defaults.demo sdkconfig.defaults    # 快速体验
-# cp sdkconfig.defaults.feishu sdkconfig.defaults # 飞书机器人
+cp platform/esp32c3-qemu/sdkconfig.defaults.demo \
+   platform/esp32c3-qemu/sdkconfig.defaults        # 快速体验
+# cp platform/esp32c3-qemu/sdkconfig.defaults.feishu \
+#    platform/esp32c3-qemu/sdkconfig.defaults       # 飞书机器人
 
-idf.py set-target esp32c3
+idf.py -C platform/esp32c3-qemu set-target esp32c3
 ```
 
 所有预设均包含：AI 引擎、Tool Use、蜂群心跳、调度器、LCD、技能系统、上电 AI 连接测试。
@@ -129,7 +130,7 @@ idf.py set-target esp32c3
 **4. 配置 API 密钥**
 
 ```bash
-idf.py menuconfig
+idf.py -C platform/esp32c3-qemu menuconfig
 # 路径：Component config → rt-claw Configuration → AI Engine
 #   - LLM API Key:          <你的 API 密钥>
 #   - LLM API endpoint URL: https://api.anthropic.com/v1/messages
@@ -139,7 +140,7 @@ idf.py menuconfig
 **5.（可选）配置飞书机器人**
 
 ```bash
-idf.py menuconfig
+idf.py -C platform/esp32c3-qemu menuconfig
 # 路径：Component config → rt-claw Configuration → Feishu (Lark) Integration
 #   - Enable Feishu IM integration: [*]
 #   - Feishu App ID:     <你的 App ID>
@@ -160,7 +161,7 @@ make esp32c3-qemu
 make run-esp32c3-qemu
 
 # 或烧录到真实硬件（未测试）
-idf.py -p /dev/ttyUSB0 flash monitor
+idf.py -C platform/esp32c3-qemu -p /dev/ttyUSB0 flash monitor
 ```
 
 ### QEMU vexpress-a9 (RT-Thread)
@@ -174,7 +175,7 @@ make vexpress-a9-qemu
 # 配置 API 密钥（可选）
 meson configure build/vexpress-a9-qemu -Dai_api_key='<your-key>'
 meson compile -C build/vexpress-a9-qemu
-cd platform/vexpress-a9-qemu && scons -j$(nproc)
+scons -C platform/vexpress-a9-qemu -j$(nproc)
 
 # 启动 API 代理（RT-Thread 无 TLS，代理转发 HTTP→HTTPS）
 python3 tools/api-proxy.py https://api.anthropic.com &

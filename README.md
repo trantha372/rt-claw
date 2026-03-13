@@ -118,13 +118,14 @@ sudo pacman -S --needed libgcrypt glib2 pixman sdl2 libslirp \
 
 ```bash
 source $HOME/esp/esp-idf/export.sh
-cd platform/esp32c3-qemu
 
 # Pick one:
-cp sdkconfig.defaults.demo sdkconfig.defaults    # Quick Demo
-# cp sdkconfig.defaults.feishu sdkconfig.defaults # Feishu Bot
+cp platform/esp32c3-qemu/sdkconfig.defaults.demo \
+   platform/esp32c3-qemu/sdkconfig.defaults        # Quick Demo
+# cp platform/esp32c3-qemu/sdkconfig.defaults.feishu \
+#    platform/esp32c3-qemu/sdkconfig.defaults       # Feishu Bot
 
-idf.py set-target esp32c3
+idf.py -C platform/esp32c3-qemu set-target esp32c3
 ```
 
 All presets include: AI engine, Tool Use, swarm heartbeat, scheduler,
@@ -133,7 +134,7 @@ LCD, skills, and boot-time AI connectivity test.
 **4. Configure API key**
 
 ```bash
-idf.py menuconfig
+idf.py -C platform/esp32c3-qemu menuconfig
 # Navigate: Component config → rt-claw Configuration → AI Engine
 #   - LLM API Key:          <your-api-key>
 #   - LLM API endpoint URL: https://api.anthropic.com/v1/messages
@@ -143,7 +144,7 @@ idf.py menuconfig
 **5. (Optional) Configure Feishu bot**
 
 ```bash
-idf.py menuconfig
+idf.py -C platform/esp32c3-qemu menuconfig
 # Navigate: Component config → rt-claw Configuration → Feishu (Lark) Integration
 #   - Enable Feishu IM integration: [*]
 #   - Feishu App ID:     <your-app-id>
@@ -165,7 +166,7 @@ make esp32c3-qemu
 make run-esp32c3-qemu
 
 # Or flash to real hardware (untested)
-idf.py -p /dev/ttyUSB0 flash monitor
+idf.py -C platform/esp32c3-qemu -p /dev/ttyUSB0 flash monitor
 ```
 
 ### QEMU vexpress-a9 (RT-Thread)
@@ -179,7 +180,7 @@ make vexpress-a9-qemu
 # Configure API key (optional)
 meson configure build/vexpress-a9-qemu -Dai_api_key='<your-key>'
 meson compile -C build/vexpress-a9-qemu
-cd platform/vexpress-a9-qemu && scons -j$(nproc)
+scons -C platform/vexpress-a9-qemu -j$(nproc)
 
 # Start API proxy (RT-Thread has no TLS, proxy forwards HTTP->HTTPS)
 python3 tools/api-proxy.py https://api.anthropic.com &
