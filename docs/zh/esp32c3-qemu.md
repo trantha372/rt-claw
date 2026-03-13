@@ -73,13 +73,13 @@ idf.py build                       # 链接生成最终固件
 ### 方式一：统一脚本（推荐）
 
 ```bash
-./tools/qemu-run.sh -M esp32c3-qemu             # 仅串口
-./tools/qemu-run.sh -M esp32c3-qemu --graphics  # 带 LCD 显示窗口
+./tools/sim-run.sh -M esp32c3-qemu             # 仅串口
+./tools/sim-run.sh -M esp32c3-qemu --graphics  # 带 LCD 显示窗口
 ```
 
 启用 Tab 补全（bash/zsh）：
 ```bash
-eval "$(tools/qemu-run.sh --setup-completion)"
+eval "$(tools/sim-run.sh --setup-completion)"
 ```
 
 ### 方式二：idf.py 封装
@@ -130,7 +130,7 @@ idf.py gdb
 
 ```bash
 # 终端 1
-./tools/qemu-run.sh -M esp32c3-qemu -g
+./tools/sim-run.sh -M esp32c3-qemu -g
 
 # 终端 2
 cd platform/esp32c3-qemu

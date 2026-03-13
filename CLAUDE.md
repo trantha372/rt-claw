@@ -34,23 +34,23 @@ meson compile -C build/esp32s3-qemu
 ```bash
 # QEMU vexpress-a9 (RT-Thread)
 make run-vexpress-a9-qemu                       # build + launch QEMU
-tools/qemu-run.sh -M vexpress-a9-qemu           # launch only (must build first)
-tools/qemu-run.sh -M vexpress-a9-qemu -g        # debug mode (GDB port 1234)
+tools/sim-run.sh -M vexpress-a9-qemu           # launch only (must build first)
+tools/sim-run.sh -M vexpress-a9-qemu -g        # debug mode (GDB port 1234)
 
 # ESP32-C3 QEMU (requires ESP-IDF)
 make run-esp32c3-qemu                  # build + launch QEMU
-tools/qemu-run.sh -M esp32c3-qemu     # launch only
-tools/qemu-run.sh -M esp32c3-qemu --graphics  # with LCD display window
-tools/qemu-run.sh -M esp32c3-qemu -g  # debug mode (GDB port 1234)
+tools/sim-run.sh -M esp32c3-qemu     # launch only
+tools/sim-run.sh -M esp32c3-qemu --graphics  # with LCD display window
+tools/sim-run.sh -M esp32c3-qemu -g  # debug mode (GDB port 1234)
 
 # ESP32-S3 QEMU (requires ESP-IDF)
 make run-esp32s3-qemu                  # build + launch QEMU
-tools/qemu-run.sh -M esp32s3-qemu     # launch only
-tools/qemu-run.sh -M esp32s3-qemu --graphics  # with LCD display window
-tools/qemu-run.sh -M esp32s3-qemu -g  # debug mode (GDB port 1234)
+tools/sim-run.sh -M esp32s3-qemu     # launch only
+tools/sim-run.sh -M esp32s3-qemu --graphics  # with LCD display window
+tools/sim-run.sh -M esp32s3-qemu -g  # debug mode (GDB port 1234)
 
 # Shell completion
-eval "$(tools/qemu-run.sh --setup-completion)"
+eval "$(tools/sim-run.sh --setup-completion)"
 ```
 
 ## Code Style
@@ -96,7 +96,7 @@ No unit test framework yet. Verify changes by:
 
 1. Build passes on at least one platform
 2. `scripts/check-patch.sh --staged` passes
-3. QEMU boot test: `tools/qemu-run.sh -M vexpress-a9-qemu` or `tools/qemu-run.sh -M esp32c3-qemu` or `tools/qemu-run.sh -M esp32s3-qemu`
+3. QEMU boot test: `tools/sim-run.sh -M vexpress-a9-qemu` or `tools/sim-run.sh -M esp32c3-qemu` or `tools/sim-run.sh -M esp32s3-qemu`
 
 ## Key Paths
 
@@ -119,5 +119,5 @@ No unit test framework yet. Verify changes by:
 | `platform/vexpress-a9-qemu/` | RT-Thread BSP + Meson cross-file |
 | `scripts/gen-esp32c3-cross.py` | Generate ESP32-C3 Meson cross-file |
 | `scripts/gen-esp32s3-cross.py` | Generate ESP32-S3 Meson cross-file |
-| `tools/qemu-run.sh` | Unified QEMU launcher (-M vexpress-a9-qemu/esp32c3-qemu/esp32s3-qemu) |
+| `tools/sim-run.sh` | Unified QEMU launcher (-M vexpress-a9-qemu/esp32c3-qemu/esp32s3-qemu) |
 | `tools/api-proxy.py` | HTTP→HTTPS proxy for QEMU without TLS |

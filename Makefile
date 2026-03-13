@@ -38,7 +38,7 @@ vexpress-a9-qemu:
 
 .PHONY: run-vexpress-a9-qemu
 run-vexpress-a9-qemu: vexpress-a9-qemu
-	tools/qemu-run.sh -M vexpress-a9-qemu
+	tools/sim-run.sh -M vexpress-a9-qemu
 
 # --- ESP32-C3 QEMU (ESP-IDF) ---
 # Prerequisite: source $$HOME/esp/esp-idf/export.sh
@@ -65,7 +65,7 @@ esp32c3-qemu:
 
 .PHONY: run-esp32c3-qemu
 run-esp32c3-qemu: esp32c3-qemu
-	tools/qemu-run.sh -M esp32c3-qemu
+	tools/sim-run.sh -M esp32c3-qemu
 
 # --- ESP32-S3 QEMU (ESP-IDF) ---
 # Prerequisite: source $$HOME/esp/esp-idf/export.sh
@@ -92,7 +92,7 @@ esp32s3-qemu:
 
 .PHONY: run-esp32s3-qemu
 run-esp32s3-qemu: esp32s3-qemu
-	tools/qemu-run.sh -M esp32s3-qemu
+	tools/sim-run.sh -M esp32s3-qemu
 
 # --- Clean ---
 .PHONY: clean

@@ -1,10 +1,10 @@
 #!/bin/bash
 # SPDX-License-Identifier: MIT
 #
-# Unified QEMU launcher for rt-claw.
+# Unified simulator launcher for rt-claw.
 #
 # Usage:
-#   ./tools/qemu-run.sh -M <machine> [options]
+#   ./tools/sim-run.sh -M <machine> [options]
 #
 # Machines:
 #   vexpress-a9-qemu        QEMU vexpress-a9 (RT-Thread, ARM Cortex-A9)
@@ -18,7 +18,7 @@
 #   -h           Show this help
 #
 # Shell completion:
-#   eval "$(tools/qemu-run.sh --setup-completion)"
+#   eval "$(tools/sim-run.sh --setup-completion)"
 
 set -e
 
@@ -39,8 +39,8 @@ usage() {
 
 setup_completion() {
     cat <<'COMP_EOF'
-# bash completion for qemu-run.sh
-_qemu_run() {
+# bash/zsh completion for sim-run.sh
+_sim_run() {
     local cur prev opts machines
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
@@ -58,16 +58,16 @@ _qemu_run() {
         COMPREPLY=( $(compgen -W "$opts" -- "$cur") )
     fi
 }
-complete -F _qemu_run qemu-run.sh
-complete -F _qemu_run tools/qemu-run.sh
-complete -F _qemu_run ./tools/qemu-run.sh
+complete -F _sim_run sim-run.sh
+complete -F _sim_run tools/sim-run.sh
+complete -F _sim_run ./tools/sim-run.sh
 
 # zsh compatibility
 if [ -n "$ZSH_VERSION" ]; then
     autoload -U +X bashcompinit 2>/dev/null && bashcompinit
-    complete -F _qemu_run qemu-run.sh
-    complete -F _qemu_run tools/qemu-run.sh
-    complete -F _qemu_run ./tools/qemu-run.sh
+    complete -F _sim_run sim-run.sh
+    complete -F _sim_run tools/sim-run.sh
+    complete -F _sim_run ./tools/sim-run.sh
 fi
 COMP_EOF
     exit 0
