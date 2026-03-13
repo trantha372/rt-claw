@@ -8,6 +8,7 @@ src_files = files(
     'services/im/feishu.c',
     'services/net/net_service.c',
     'services/swarm/swarm.c',
+    'shell/shell_commands.c',
     'tools/claw_tools.c',
     'tools/tool_gpio.c',
     'tools/tool_lcd.c',

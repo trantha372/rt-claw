@@ -12,6 +12,14 @@
 #include <string.h>
 #include <stdio.h>
 
+/* ANSI color codes */
+#define CLR_RESET   "\033[0m"
+#define CLR_RED     "\033[0;31m"
+#define CLR_GREEN   "\033[0;32m"
+#define CLR_YELLOW  "\033[0;33m"
+#define CLR_CYAN    "\033[0;36m"
+#define CLR_MAGENTA "\033[0;35m"
+
 typedef void (*shell_cmd_fn)(int argc, char **argv);
 
 typedef struct {
@@ -32,7 +40,6 @@ static inline void shell_print_help(const shell_cmd_t *table, int count)
     for (i = 0; i < count; i++) {
         printf("  %-28s %s\n", table[i].name, table[i].help);
     }
-    printf("\n  Anything else is sent directly to AI.\n");
 }
 
 static inline int shell_dispatch(const shell_cmd_t *table, int count,
@@ -47,6 +54,29 @@ static inline int shell_dispatch(const shell_cmd_t *table, int count,
         }
     }
     return 0;
+}
+
+/* Split string into argv-style tokens (modifies input in place) */
+static inline int shell_tokenize(char *line, char **argv, int max_args)
+{
+    int argc = 0;
+
+    while (*line && argc < max_args) {
+        while (*line == ' ') {
+            line++;
+        }
+        if (*line == '\0') {
+            break;
+        }
+        argv[argc++] = line;
+        while (*line && *line != ' ') {
+            line++;
+        }
+        if (*line) {
+            *line++ = '\0';
+        }
+    }
+    return argc;
 }
 
 #endif /* CLAW_SHELL_CMD_H */
