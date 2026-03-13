@@ -21,6 +21,7 @@ help:
 	@echo "  make esp32s3-qemu          Build for ESP32-S3 QEMU (ESP-IDF)"
 	@echo ""
 	@echo "Build (real hardware):"
+	@echo "  make esp32c3               Build for ESP32-C3 real hardware"
 	@echo "  make esp32s3               Build for ESP32-S3 real hardware"
 	@echo ""
 	@echo "Run QEMU (build + launch):"
@@ -29,8 +30,10 @@ help:
 	@echo "  make run-esp32s3-qemu"
 	@echo ""
 	@echo "Flash + monitor (real hardware):"
+	@echo "  make flash-esp32c3         Flash firmware to ESP32-C3"
+	@echo "  make monitor-esp32c3       Serial monitor for ESP32-C3"
 	@echo "  make flash-esp32s3         Flash firmware to ESP32-S3"
-	@echo "  make monitor-esp32s3       Serial monitor (Ctrl+] to exit)"
+	@echo "  make monitor-esp32s3       Serial monitor for ESP32-S3"
 	@echo ""
 	@echo "Run options (pass as variables):"
 	@echo "  make run-esp32c3-qemu GDB=1        Debug mode (GDB port 1234)"
@@ -165,6 +168,42 @@ run-esp32s3-qemu: esp32s3-qemu
 		-drive file=$(ESP_S3_PLATFORM)/build/flash_image.bin,if=mtd,format=raw \
 		-nic user,model=open_eth \
 		$(if $(filter 1,$(GDB)),-S -s)
+
+# --- ESP32-C3 real hardware (ESP-IDF + WiFi) ---
+# Prerequisite: source $$HOME/esp/esp-idf/export.sh
+MESON_BUILDDIR_C3_HW := $(BUILD_DIR)/esp32c3
+CROSS_FILE_C3_HW     := platform/esp32c3/cross.ini
+ESP_C3_HW_PLATFORM   := platform/esp32c3
+
+.PHONY: esp32c3
+esp32c3:
+	@if [ ! -f $(ESP_C3_HW_PLATFORM)/sdkconfig ]; then \
+		rm -rf $(ESP_C3_HW_PLATFORM)/build; \
+		cd $(ESP_C3_HW_PLATFORM) && idf.py set-target esp32c3; \
+	fi
+	@if [ ! -f $(ESP_C3_HW_PLATFORM)/build/compile_commands.json ]; then \
+		cd $(ESP_C3_HW_PLATFORM) && idf.py reconfigure; \
+	fi
+	python3 scripts/gen-esp32c3-cross.py esp32c3
+	@if [ ! -f $(MESON_BUILDDIR_C3_HW)/build.ninja ]; then \
+		meson setup $(MESON_BUILDDIR_C3_HW) --cross-file $(CROSS_FILE_C3_HW); \
+	fi
+	meson compile -C $(MESON_BUILDDIR_C3_HW)
+	cd $(ESP_C3_HW_PLATFORM) && idf.py reconfigure && idf.py build
+	@echo "Output: $(ESP_C3_HW_PLATFORM)/build/rt-claw.bin"
+
+.PHONY: flash-esp32c3
+flash-esp32c3: esp32c3
+	cd $(ESP_C3_HW_PLATFORM) && idf.py flash
+
+.PHONY: monitor-esp32c3
+monitor-esp32c3:
+	cd $(ESP_C3_HW_PLATFORM) && idf.py monitor
+
+.PHONY: clean-esp32c3
+clean-esp32c3:
+	rm -rf $(BUILD_DIR)/esp32c3
+	rm -f platform/esp32c3/cross.ini
 
 # --- ESP32-S3 real hardware (ESP-IDF + WiFi) ---
 # Prerequisite: source $$HOME/esp/esp-idf/export.sh

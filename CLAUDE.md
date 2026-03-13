@@ -13,6 +13,7 @@ All outputs go to `build/<platform>/`.
 make vexpress-a9-qemu                           # Meson + SCons → build/vexpress-a9-qemu/
 make esp32c3-qemu                      # Meson + idf.py (requires ESP-IDF)
 make esp32s3-qemu                      # Meson + idf.py (requires ESP-IDF)
+make esp32c3                           # Meson + idf.py (real hardware)
 make esp32s3                           # Meson + idf.py (real hardware)
 
 # Meson only (libraries)
@@ -60,6 +61,10 @@ make run-esp32c3-qemu GDB=1           # debug mode (GDB port 1234)
 make run-esp32s3-qemu                  # build + launch QEMU
 make run-esp32s3-qemu GRAPHICS=1      # with LCD display window
 make run-esp32s3-qemu GDB=1           # debug mode (GDB port 1234)
+
+# ESP32-C3 real hardware
+make flash-esp32c3                     # build + flash firmware
+make monitor-esp32c3                   # serial monitor
 
 # ESP32-S3 real hardware
 make flash-esp32s3                     # build + flash firmware
@@ -132,6 +137,7 @@ No unit test framework yet. Verify changes by:
 | `claw/tools/` | Tool Use framework |
 | `platform/esp32c3-qemu/` | ESP32-C3 QEMU ESP-IDF project + auto-gen cross-file |
 | `platform/esp32s3-qemu/` | ESP32-S3 QEMU ESP-IDF project + auto-gen cross-file |
+| `platform/esp32c3/` | ESP32-C3 real hardware (WiFi) |
 | `platform/esp32s3/` | ESP32-S3 real hardware (WiFi + PSRAM) |
 | `platform/vexpress-a9-qemu/` | RT-Thread BSP + Meson cross-file |
 | `scripts/gen-esp32c3-cross.py` | Generate ESP32-C3 Meson cross-file |
