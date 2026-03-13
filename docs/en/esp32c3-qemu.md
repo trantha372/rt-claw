@@ -51,21 +51,32 @@ This installs:
 ## Build
 
 ```bash
-# Make sure ESP-IDF is sourced
 source $HOME/esp/esp-idf/export.sh
 
-# Build
-./tools/esp32c3-build.sh
+# Recommended: unified build
+make esp32c3
 
-# Or manually:
+# Or step-by-step:
 cd platform/esp32c3
-idf.py set-target esp32c3
-idf.py build
+idf.py set-target esp32c3          # first time only
+idf.py reconfigure                 # generate compile_commands.json
+cd ../..
+python3 scripts/gen-esp32c3-cross.py  # generate Meson cross-file
+meson setup build/esp32c3 --cross-file platform/esp32c3/cross.ini
+meson compile -C build/esp32c3     # cross-compile core code
+cd platform/esp32c3
+idf.py build                       # link into final firmware
 ```
 
 ## Run on QEMU
 
-### Method 1: idf.py wrapper (recommended)
+### Method 1: Launch script (recommended)
+
+```bash
+./tools/esp32c3-qemu-run.sh
+```
+
+### Method 2: idf.py wrapper
 
 ```bash
 cd platform/esp32c3
@@ -74,7 +85,7 @@ idf.py qemu monitor
 
 Exit with `Ctrl+]`.
 
-### Method 2: Direct QEMU launch
+### Method 3: Direct QEMU launch
 
 ```bash
 ./tools/esp32c3-qemu-run.sh --raw

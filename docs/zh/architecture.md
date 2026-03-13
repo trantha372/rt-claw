@@ -63,11 +63,11 @@ src/*.c  --->  #include "claw_os.h"  (编译时接口)
 
 ### AI 引擎（src/services/ai）
 
-轻量级推理运行时：
+LLM API 客户端，支持 Tool Use：
 
-- 规则引擎用于本地决策
-- MQTT 中继到云端 LLM API
-- TinyML 模型执行（未来计划）
+- Claude API 对话与函数调用（Tool Use）
+- 对话记忆（短期 RAM 环形缓冲 + 长期存储）
+- HTTP/HTTPS 传输（ESP-IDF 使用 esp_http_client + TLS；RT-Thread 使用 BSD socket + 代理）
 
 ## 平台
 
@@ -78,14 +78,14 @@ src/*.c  --->  #include "claw_os.h"  (编译时接口)
 - WiFi：802.11 b/g/n
 - BLE：Bluetooth 5.0 LE
 - RTOS：ESP-IDF + FreeRTOS
-- 构建：CMake（idf.py）
+- 构建：Meson（交叉编译）+ CMake/idf.py（链接 + 烧录）
 - QEMU：Espressif 分支（qemu-riscv32），仅 UART（无 WiFi 仿真）
 
 ### QEMU vexpress-a9（platform/qemu-a9-rtthread/）
 
 - CPU：ARM Cortex-A9（双核）
 - RTOS：RT-Thread
-- 构建：SCons
+- 构建：Meson（交叉编译）+ SCons（链接）
 - 外设：UART、以太网、LCD、SD 卡
 
 ## 通信流程
@@ -117,6 +117,6 @@ src/*.c  --->  #include "claw_os.h"  (编译时接口)
 | Gateway | ~8KB | MQ 16x256B + 线程 |
 | Swarm | ~12KB | 32 节点 + ESP-NOW |
 | Net（MQTT） | ~25KB | 客户端 + 缓冲区 |
-| AI Engine | ~15KB | 规则引擎 |
+| AI Engine | ~15KB | LLM API 客户端 + Tool Use |
 | App + CLI | ~10KB | 主程序 + shell |
 | **合计** | **~230KB** | 约 170KB 剩余空间 |

@@ -75,10 +75,11 @@ scenario without writing, compiling, or flashing embedded code again.
 
 ## Supported Platforms
 
-| Platform | RTOS | Build System | Status |
-|----------|------|-------------|--------|
-| ESP32-C3 | ESP-IDF + FreeRTOS | CMake (idf.py) | Networking + AI working on QEMU |
-| QEMU vexpress-a9 | RT-Thread | SCons | Boot verified |
+| Platform | Target | RTOS | Build | Status |
+|----------|--------|------|-------|--------|
+| ESP32-C3 | QEMU (Espressif fork) | ESP-IDF + FreeRTOS | Meson + CMake | AI verified |
+| ESP32-C3 | Real hardware | ESP-IDF + FreeRTOS | Meson + CMake | Untested |
+| QEMU vexpress-a9 | QEMU | RT-Thread | Meson + SCons | AI verified |
 
 ## Quick Start
 
@@ -155,23 +156,34 @@ on boot — no public IP required.
 **6. Build and run**
 
 ```bash
-# Build (auto-detects target if sdkconfig exists)
-./tools/esp32c3-build.sh
+# Unified build (recommended)
+make esp32c3
 
-# Run on QEMU (generates flash image + launches emulator)
+# Run on QEMU
 ./tools/esp32c3-qemu-run.sh
 
-# Or flash to real hardware
+# Or flash to real hardware (untested)
 idf.py -p /dev/ttyUSB0 flash monitor
 ```
 
 ### QEMU vexpress-a9 (RT-Thread)
 
 ```bash
-# Prerequisites: arm-none-eabi-gcc, qemu-system-arm, scons
-cd platform/qemu-a9-rtthread
-scons -j$(nproc)
-../../tools/qemu-run.sh
+# Prerequisites: arm-none-eabi-gcc, qemu-system-arm, scons, meson, ninja
+
+# Unified build
+make qemu-a9
+
+# Configure API key (optional)
+meson configure build/qemu-a9 -Dai_api_key='<your-key>'
+meson compile -C build/qemu-a9
+cd platform/qemu-a9-rtthread && scons -j$(nproc)
+
+# Start API proxy (RT-Thread has no TLS, proxy forwards HTTP->HTTPS)
+python3 tools/api-proxy.py https://api.anthropic.com &
+
+# Run
+./tools/qemu-run.sh
 ```
 
 ## Project Structure
@@ -196,10 +208,15 @@ rt-claw/
 ├── vendor/
 │   ├── freertos/                # FreeRTOS-Kernel (submodule)
 │   └── rt-thread/               # RT-Thread (submodule)
+├── meson.build                  # Meson build definition (cross-compiles src + osal)
+├── meson.options                # Meson build options (osal backend, features, AI config)
+├── Makefile                     # Unified build entry (make esp32c3 / make qemu-a9)
 ├── docs/
 │   ├── en/                      # English documentation
 │   └── zh/                      # Chinese documentation
-├── scripts/                     # Code style & dev tools
+├── scripts/
+│   ├── gen-esp32c3-cross.py     # Auto-generate Meson cross-file from ESP-IDF
+│   └── ...
 └── tools/                       # Build, launch & dev scripts
 ```
 

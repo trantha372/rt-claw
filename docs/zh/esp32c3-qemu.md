@@ -51,21 +51,32 @@ source $HOME/esp/esp-idf/export.sh
 ## 构建
 
 ```bash
-# 确保已 source ESP-IDF 环境
 source $HOME/esp/esp-idf/export.sh
 
-# 构建
-./tools/esp32c3-build.sh
+# 推荐：统一构建
+make esp32c3
 
-# 或手动：
+# 或分步操作：
 cd platform/esp32c3
-idf.py set-target esp32c3
-idf.py build
+idf.py set-target esp32c3          # 仅首次
+idf.py reconfigure                 # 生成 compile_commands.json
+cd ../..
+python3 scripts/gen-esp32c3-cross.py  # 生成 Meson 交叉编译文件
+meson setup build/esp32c3 --cross-file platform/esp32c3/cross.ini
+meson compile -C build/esp32c3     # 交叉编译核心代码
+cd platform/esp32c3
+idf.py build                       # 链接生成最终固件
 ```
 
 ## 在 QEMU 上运行
 
-### 方式一：idf.py 封装（推荐）
+### 方式一：统一脚本（推荐）
+
+```bash
+./tools/esp32c3-qemu-run.sh
+```
+
+### 方式二：idf.py 封装
 
 ```bash
 cd platform/esp32c3
@@ -74,7 +85,7 @@ idf.py qemu monitor
 
 按 `Ctrl+]` 退出。
 
-### 方式二：直接启动 QEMU
+### 方式三：直接启动 QEMU
 
 ```bash
 ./tools/esp32c3-qemu-run.sh --raw

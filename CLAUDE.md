@@ -4,26 +4,33 @@ rt-claw: OpenClaw-inspired AI assistant on embedded RTOS (FreeRTOS + RT-Thread) 
 
 ## Build
 
-```bash
-# ESP32-C3 (ESP-IDF + FreeRTOS)
-source $HOME/esp/esp-idf/export.sh
-cd platform/esp32c3
-idf.py set-target esp32c3 && idf.py build
+Meson cross-compiles `src/` and `osal/` into static libraries, then each platform's
+native build system (SCons/CMake) links them into the final firmware.
+All outputs go to `build/<platform>/`.
 
-# QEMU vexpress-a9 (RT-Thread)
-cd platform/qemu-a9-rtthread
-scons -j$(nproc)
+```bash
+# Unified entry (from project root)
+make qemu-a9                           # Meson + SCons → build/qemu-a9/
+make esp32c3                           # Meson + idf.py (requires ESP-IDF)
+
+# Meson only (libraries)
+meson setup build/qemu-a9 --cross-file platform/qemu-a9-rtthread/cross.ini
+meson compile -C build/qemu-a9
+
+# ESP32-C3: auto-generated cross.ini from ESP-IDF config
+python3 scripts/gen-esp32c3-cross.py
+meson setup build/esp32c3 --cross-file platform/esp32c3/cross.ini
+meson compile -C build/esp32c3
 ```
 
 ## Run
 
 ```bash
-# ESP32-C3 QEMU
-idf.py qemu monitor                    # serial only
-idf.py qemu --graphics monitor         # with LCD
+make run-qemu-a9                       # build + launch QEMU
+tools/qemu-run.sh                      # launch only (must build first)
 
-# RT-Thread QEMU
-tools/qemu-run.sh
+# ESP32-C3 QEMU
+make run-esp32c3                       # build + launch QEMU
 ```
 
 ## Code Style
@@ -75,13 +82,18 @@ No unit test framework yet. Verify changes by:
 
 | Path | Purpose |
 |------|---------|
+| `Makefile` | Unified build entry point |
+| `meson.build` | Root Meson project (cross-compiles src/ + osal/) |
+| `meson.options` | Build options (osal backend, feature flags) |
+| `build/<platform>/` | Build outputs (gitignored) |
 | `osal/include/claw_os.h` | OSAL API (the only header core code includes) |
 | `osal/freertos/` | FreeRTOS OSAL implementation |
 | `osal/rtthread/` | RT-Thread OSAL implementation |
 | `src/claw_init.c` | Boot entry point |
-| `src/claw_config.h` | Compile-time configuration (`CLAW_<SUBSYS>_<PARAM>`) |
+| `src/claw_config.h` | Compile-time constants (platform-independent) |
 | `src/core/gateway.*` | Message router |
 | `src/services/{ai,net,swarm}/` | Service modules |
 | `src/tools/` | Tool Use framework |
-| `platform/esp32c3/` | ESP-IDF project |
-| `platform/qemu-a9-rtthread/` | RT-Thread BSP |
+| `platform/esp32c3/` | ESP-IDF project + auto-gen cross-file |
+| `platform/qemu-a9-rtthread/` | RT-Thread BSP + Meson cross-file |
+| `scripts/gen-esp32c3-cross.py` | Generate ESP32-C3 Meson cross-file |

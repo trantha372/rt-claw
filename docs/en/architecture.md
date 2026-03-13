@@ -63,11 +63,12 @@ Platform-aware networking:
 
 ### AI Engine (src/services/ai)
 
-Lightweight inference runtime:
+LLM API client with Tool Use support:
 
-- Rule engine for local decision making
-- MQTT relay to cloud LLM APIs
-- TinyML model execution (future)
+- Claude API integration with streaming HTTP requests
+- Tool Use: LLM-driven hardware control via function calling (GPIO, system info, LCD)
+- Conversation memory (short-term RAM ring buffer + long-term NVS storage)
+- HTTP/HTTPS transport (ESP-IDF uses esp_http_client with TLS; RT-Thread uses BSD sockets via API proxy)
 
 ## Platforms
 
@@ -78,14 +79,14 @@ Lightweight inference runtime:
 - WiFi: 802.11 b/g/n
 - BLE: Bluetooth 5.0 LE
 - RTOS: ESP-IDF + FreeRTOS
-- Build: CMake (idf.py)
+- Build: Meson (cross-compile) + CMake/idf.py (link + flash)
 - QEMU: Espressif fork (qemu-riscv32), UART only (no WiFi sim)
 
 ### QEMU vexpress-a9 (platform/qemu-a9-rtthread/)
 
 - CPU: ARM Cortex-A9 (dual-core)
 - RTOS: RT-Thread
-- Build: SCons
+- Build: Meson (cross-compile) + SCons (link)
 - Peripherals: UART, Ethernet, LCD, SD card
 
 ## Communication Flow
@@ -117,6 +118,6 @@ External (MQTT/HTTP)
 | Gateway | ~8KB | MQ 16x256B + thread |
 | Swarm | ~12KB | 32 nodes + ESP-NOW |
 | Net (MQTT) | ~25KB | Client + buffers |
-| AI Engine | ~15KB | Rule engine |
+| AI Engine | ~15KB | LLM client + conversation memory |
 | App + CLI | ~10KB | Main + shell |
 | **Total** | **~230KB** | ~170KB headroom |
