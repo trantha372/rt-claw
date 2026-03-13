@@ -1,4 +1,4 @@
-name: Build ESP32-S3 Firmware
+name: Build Hardware Firmware
 
 on:
   push:
@@ -7,7 +7,10 @@ on:
       - 'claw/**'
       - 'osal/**'
       - 'include/**'
+      - 'platform/esp32c3/**'
       - 'platform/esp32s3/**'
+      - 'scripts/**'
+      - 'Makefile'
       - 'meson.build'
       - 'meson_options.txt'
       - '.github/workflows/build-firmware.yml'
@@ -25,72 +28,58 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: esp32c3
+            platform_dir: platform/esp32c3
+            esp_targets: esp32c3
+            chip_family: ESP32-C3
+            artifact_name: esp32c3-firmware
+          - target: esp32s3
+            platform_dir: platform/esp32s3
+            esp_targets: esp32s3
+            chip_family: ESP32-S3
+            artifact_name: esp32s3-firmware
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
       - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y git wget flex bison gperf python3 python3-venv \
-            cmake ninja-build ccache libffi-dev libssl-dev dfu-util \
-            libusb-1.0-0 meson
+        run: scripts/ci/install-system-deps.sh build
 
-      - name: Cache ESP-IDF
+      - name: Cache ESP-IDF source
         uses: actions/cache@v4
-        id: cache-idf
         with:
-          path: ~/esp
-          key: esp-idf-v5.4-${{ runner.os }}
+          path: ~/esp/esp-idf
+          key: esp-idf-src-v5.4-${{ runner.os }}
 
-      - name: Install ESP-IDF
-        if: steps.cache-idf.outputs.cache-hit != 'true'
-        run: |
-          mkdir -p ~/esp
-          cd ~/esp
-          git clone -b v5.4 --depth 1 --recursive https://github.com/espressif/esp-idf.git
-          cd esp-idf
-          ./install.sh esp32s3
+      - name: Cache ESP-IDF tools
+        uses: actions/cache@v4
+        with:
+          path: ~/.espressif
+          key: esp-idf-tools-v5.4-${{ matrix.esp_targets }}-${{ runner.os }}
 
-      - name: Build ESP32-S3 firmware
+      - name: Ensure ESP-IDF environment
+        run: scripts/ci/setup-esp-idf.sh "${{ matrix.esp_targets }}" none
+
+      - name: Build hardware firmware
         run: |
           source ~/esp/esp-idf/export.sh
-          make esp32s3
+          make ${{ matrix.target }}
 
       - name: Prepare firmware artifacts
         run: |
-          mkdir -p firmware-out
-          PLATFORM_DIR=platform/esp32s3
-          BUILD_DIR=${PLATFORM_DIR}/build
-
-          cp ${BUILD_DIR}/bootloader/bootloader.bin firmware-out/bootloader.bin
-          cp ${BUILD_DIR}/partition_table/partition-table.bin firmware-out/partition-table.bin
-          cp ${BUILD_DIR}/rt-claw.bin firmware-out/firmware.bin
-
-          # Generate manifest for esp-web-tools
-          cat > firmware-out/manifest.json << 'MANIFEST'
-          {
-              "name": "RT-Claw",
-              "version": "${{ github.sha }}",
-              "new_install_prompt_erase": true,
-              "builds": [
-                  {
-                      "chipFamily": "ESP32-S3",
-                      "parts": [
-                          { "path": "bootloader.bin", "offset": 0 },
-                          { "path": "partition-table.bin", "offset": 32768 },
-                          { "path": "firmware.bin", "offset": 65536 }
-                      ]
-                  }
-              ]
-          }
-          MANIFEST
+          RTCLAW_FIRMWARE_VERSION="${{ github.sha }}" \
+            scripts/ci/package-esp-firmware.sh \
+            "${{ matrix.platform_dir }}" "${{ matrix.chip_family }}" firmware-out "RT-Claw"
 
       - name: Upload firmware artifact
         uses: actions/upload-artifact@v4
         with:
-          name: esp32s3-firmware
+          name: ${{ matrix.artifact_name }}
           path: firmware-out/
 
   deploy:
@@ -102,11 +91,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download firmware artifact
+      - name: Download ESP32-C3 firmware artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: esp32c3-firmware
+          path: website/firmware/esp32c3/
+
+      - name: Download ESP32-S3 firmware artifact
         uses: actions/download-artifact@v4
         with:
           name: esp32s3-firmware
-          path: website/firmware/
+          path: website/firmware/esp32s3/
 
       - name: Copy images to website
         run: cp -r images/ website/img/

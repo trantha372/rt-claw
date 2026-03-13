@@ -1,0 +1,98 @@
+name: CI Online Integration
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'claw/**'
+      - 'osal/**'
+      - 'include/**'
+      - 'platform/esp32c3-qemu/**'
+      - 'platform/esp32s3-qemu/**'
+      - 'scripts/**'
+      - 'Makefile'
+      - 'meson.build'
+      - 'meson_options.txt'
+      - '.github/workflows/ci-online-integration.yml'
+  schedule:
+    - cron: '30 18 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-online-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  online:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: esp32c3-qemu
+            esp_targets: esp32c3
+            qemu_tools: qemu-riscv32
+          - target: esp32s3-qemu
+            esp_targets: esp32s3
+            qemu_tools: qemu-xtensa
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Validate integration secrets
+        env:
+          RTCLAW_AI_API_KEY: ${{ secrets.RTCLAW_AI_API_KEY }}
+          RTCLAW_FEISHU_APP_ID: ${{ secrets.RTCLAW_FEISHU_APP_ID }}
+          RTCLAW_FEISHU_APP_SECRET: ${{ secrets.RTCLAW_FEISHU_APP_SECRET }}
+        run: |
+          for key in RTCLAW_AI_API_KEY RTCLAW_FEISHU_APP_ID RTCLAW_FEISHU_APP_SECRET; do
+            if [ -z "${!key:-}" ]; then
+              echo "::error::Missing required secret: ${key}"
+              exit 1
+            fi
+          done
+
+      - name: Install system dependencies
+        run: scripts/ci/install-system-deps.sh qemu
+
+      - name: Cache ESP-IDF source
+        uses: actions/cache@v4
+        with:
+          path: ~/esp/esp-idf
+          key: esp-idf-src-v5.4-${{ runner.os }}
+
+      - name: Cache ESP-IDF tools
+        uses: actions/cache@v4
+        with:
+          path: ~/.espressif
+          key: esp-idf-tools-v5.4-${{ runner.os }}
+
+      - name: Ensure ESP-IDF environment
+        run: scripts/ci/setup-esp-idf.sh "${{ matrix.esp_targets }}" "${{ matrix.qemu_tools }}"
+
+      - name: Run online integration smoke
+        env:
+          RTCLAW_AI_API_KEY: ${{ secrets.RTCLAW_AI_API_KEY }}
+          RTCLAW_AI_API_URL: ${{ vars.RTCLAW_AI_API_URL }}
+          RTCLAW_AI_MODEL: ${{ vars.RTCLAW_AI_MODEL }}
+          RTCLAW_FEISHU_APP_ID: ${{ secrets.RTCLAW_FEISHU_APP_ID }}
+          RTCLAW_FEISHU_APP_SECRET: ${{ secrets.RTCLAW_FEISHU_APP_SECRET }}
+        run: |
+          : "${RTCLAW_AI_API_URL:=https://api.anthropic.com/v1/messages}"
+          : "${RTCLAW_AI_MODEL:=claude-sonnet-4-5}"
+          export RTCLAW_AI_API_URL RTCLAW_AI_MODEL
+          scripts/ci/qemu-smoke.sh "${{ matrix.target }}" online
+
+      - name: Upload integration logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}-online
+          path: ci-artifacts/
