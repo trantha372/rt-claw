@@ -7,6 +7,7 @@
 </p>
 
 <p align="center">
+  <a href="https://discord.gg/BZ9nFVzX"><img src="https://img.shields.io/badge/Discord-RT--Claw-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
   <a href="https://qm.qq.com/q/heSPPC9De8"><img src="https://img.shields.io/badge/Join%20QQ-GTOC-brightgreen?style=for-the-badge&logo=QQ&logoColor=76bad9&color=76bad9" alt="QQ Group"></a>
   <a href="https://t.me/gevico_channel"><img src="https://img.shields.io/badge/Telegram-GTOC-blue?style=for-the-badge&logo=telegram" alt="Telegram"></a>
   <a href="https://space.bilibili.com/483048140"><img src="https://img.shields.io/badge/Bilibili-%E7%BB%9D%E5%AF%B9%E6%98%AF%E6%B3%BD%E6%96%87%E5%95%A6-FB7299?style=for-the-badge&logo=bilibili" alt="Bilibili"></a>
@@ -17,6 +18,7 @@
 
 **RT-Claw** is an [OpenClaw](https://github.com/openclaw/openclaw)-inspired intelligent assistant for embedded devices.
 Multi-RTOS support via OSAL. Build swarm intelligence with networked nodes.
+ESP32-S3 WiFi support adapted from [MimiClaw](https://github.com/memovai/mimiclaw).
 
 > Deploy your own AI assistant on hardware that costs just one dollar — seamlessly integrated into your daily workflow, efficiently bridging the digital and physical worlds.
 
@@ -85,12 +87,87 @@ scenario without writing, compiling, or flashing embedded code again.
 
 ## Quick Start
 
+### ESP32-S3 Real Hardware (WiFi + PSRAM)
+
+> Requires an ESP32-S3 board with **16 MB flash** and **8 MB PSRAM** (e.g. ESP32-S3-DevKitC-1).
+
+**1. Install system dependencies + ESP-IDF**
+
+```bash
+# Ubuntu / Debian
+sudo apt install git wget flex bison gperf python3 python3-venv \
+    cmake ninja-build ccache libffi-dev libssl-dev dfu-util \
+    libusb-1.0-0 meson
+
+# One-line ESP-IDF setup (clones ESP-IDF v5.4, installs toolchain)
+./scripts/setup-esp-env.sh
+```
+
+**2. Configure API key**
+
+```bash
+source $HOME/esp/esp-idf/export.sh
+
+idf.py -C platform/esp32s3 menuconfig
+# Navigate: Component config → rt-claw Configuration → AI Engine
+#   → API Key / API URL / Model
+```
+
+**3. Configure WiFi**
+
+Option A — build-time defaults (menuconfig):
+
+```bash
+idf.py -C platform/esp32s3 menuconfig
+# Navigate: Component config → rt-claw Configuration → WiFi
+#   → Default WiFi SSID
+#   → Default WiFi password
+```
+
+Option B — runtime via shell (saved to NVS, survives reboot):
+
+```
+/wifi_set <SSID> <PASSWORD>
+```
+
+NVS credentials (Option B) take priority over build-time defaults.
+If neither is configured, the device boots offline and waits for `/wifi_set`.
+
+**4. Build**
+
+```bash
+make esp32s3
+```
+
+**5. Flash and monitor**
+
+```bash
+# Flash (auto-detects serial port)
+make flash-esp32s3
+
+# Serial monitor (Ctrl+] to exit)
+make monitor-esp32s3
+
+# Or specify a port explicitly
+idf.py -C platform/esp32s3 -p /dev/ttyUSB0 flash monitor
+```
+
+**6. Shell commands**
+
+| Command | Description |
+|---------|-------------|
+| *(direct input)* | Send message to AI |
+| `/wifi_set <SSID> <PASS>` | Save WiFi credentials to NVS |
+| `/wifi_status` | Show connection state and IP |
+| `/wifi_scan` | Scan nearby access points |
+| `/help` | List all commands |
+
+### ESP32-C3 (ESP-IDF + QEMU)
+
 > **No hardware? No problem.** Open
 > [cnb.cool/gevico.online/rtclaw/rt-claw](https://cnb.cool/gevico.online/rtclaw/rt-claw)
 > to launch a CNB Cloud-Native IDE with all toolchains pre-installed.
 > Build and run RT-Claw on QEMU directly in your browser.
-
-### ESP32-C3 (ESP-IDF + QEMU)
 
 **1. Install system dependencies**
 
@@ -258,6 +335,7 @@ rt-claw/
 
 Join the GTOC (Gevico Open-Source Community) channels:
 
+- **Discord**: [RT-Claw](https://discord.gg/BZ9nFVzX)
 - **QQ Group**: [Join](https://qm.qq.com/q/heSPPC9De8)
 - **Telegram**: [GTOC Channel](https://t.me/gevico_channel)
 - **Bilibili**: [Zevorn](https://space.bilibili.com/483048140)
