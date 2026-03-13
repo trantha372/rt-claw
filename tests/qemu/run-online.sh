@@ -21,13 +21,13 @@ case "$platform" in
         setup_esp_idf
         prepare_profile "$platform" feishu
         build_target "$platform"
-        run_esp_qemu "$platform" 120 0
+        run_esp_qemu_until_log "$platform" 180 "[boot] AI>" "[boot] AI test failed:"
         ;;
     esp32s3-qemu)
         setup_esp_idf
         prepare_profile "$platform" feishu
         build_target "$platform"
-        run_esp_qemu "$platform" 420 0
+        run_esp_qemu_until_log "$platform" 240 "[boot] AI>" "[boot] AI test failed:"
         ;;
     *)
         echo "Unsupported online platform: ${platform}" >&2
