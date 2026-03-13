@@ -60,10 +60,10 @@
 #define CONFIG_CLAW_AI_API_KEY      ""
 #endif
 #ifndef CONFIG_CLAW_AI_API_URL
-#define CONFIG_CLAW_AI_API_URL      "https://api.anthropic.com/v1/messages"
+#define CONFIG_CLAW_AI_API_URL      "http://10.0.2.2:8888/v1/messages"
 #endif
 #ifndef CONFIG_CLAW_AI_MODEL
-#define CONFIG_CLAW_AI_MODEL        "claude-sonnet-4-6"
+#define CONFIG_CLAW_AI_MODEL        "claude-opus-4-6"
 #endif
 #ifndef CONFIG_CLAW_AI_MAX_TOKENS
 #define CONFIG_CLAW_AI_MAX_TOKENS   1024

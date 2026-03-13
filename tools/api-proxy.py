@@ -27,11 +27,11 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(length) if length > 0 else b""
 
-        # Only forward essential headers
         headers = {
             "Content-Type": self.headers.get("Content-Type", "application/json"),
             "x-api-key": self.headers.get("x-api-key", ""),
             "anthropic-version": self.headers.get("anthropic-version", "2023-06-01"),
+            "User-Agent": "curl/8.0",
         }
 
         req = urllib.request.Request(url, data=body, headers=headers, method="POST")
