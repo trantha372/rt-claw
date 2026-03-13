@@ -73,7 +73,13 @@ idf.py build                       # link into final firmware
 ### Method 1: Launch script (recommended)
 
 ```bash
-./tools/qemu-run.sh -m esp32c3
+./tools/qemu-run.sh -m esp32c3             # serial only
+./tools/qemu-run.sh -m esp32c3 --graphics  # with LCD display window
+```
+
+Enable tab completion (bash/zsh):
+```bash
+eval "$(tools/qemu-run.sh --setup-completion)"
 ```
 
 ### Method 2: idf.py wrapper

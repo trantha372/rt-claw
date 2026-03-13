@@ -211,8 +211,11 @@ rt-claw/
 │   └── zh/                      # 中文文档
 ├── scripts/
 │   ├── gen-esp32c3-cross.py    # 从 ESP-IDF 自动生成 Meson 交叉编译文件
-│   └── ...                      # 代码风格与开发工具
-└── tools/                       # 构建、启动与开发脚本
+│   └── ...
+└── tools/
+    ├── qemu-run.sh              # 统一 QEMU 启动器（-m qemu-a9 / -m esp32c3）
+    ├── api-proxy.py             # HTTP→HTTPS 代理（RT-Thread QEMU 无 TLS）
+    └── ...
 ```
 
 ## 社区

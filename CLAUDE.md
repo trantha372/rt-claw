@@ -26,11 +26,19 @@ meson compile -C build/esp32c3
 ## Run
 
 ```bash
+# QEMU vexpress-a9 (RT-Thread)
 make run-qemu-a9                       # build + launch QEMU
 tools/qemu-run.sh -m qemu-a9           # launch only (must build first)
+tools/qemu-run.sh -m qemu-a9 -g        # debug mode (GDB port 1234)
 
-# ESP32-C3 QEMU
+# ESP32-C3 QEMU (requires ESP-IDF)
 make run-esp32c3                       # build + launch QEMU
+tools/qemu-run.sh -m esp32c3           # launch only
+tools/qemu-run.sh -m esp32c3 --graphics  # with LCD display window
+tools/qemu-run.sh -m esp32c3 -g        # debug mode (GDB port 1234)
+
+# Shell completion
+eval "$(tools/qemu-run.sh --setup-completion)"
 ```
 
 ## Code Style
@@ -76,7 +84,7 @@ No unit test framework yet. Verify changes by:
 
 1. Build passes on at least one platform
 2. `scripts/check-patch.sh --staged` passes
-3. QEMU boot test: `idf.py qemu monitor` or `tools/qemu-run.sh -m qemu-a9`
+3. QEMU boot test: `tools/qemu-run.sh -m qemu-a9` or `tools/qemu-run.sh -m esp32c3`
 
 ## Key Paths
 
@@ -97,3 +105,5 @@ No unit test framework yet. Verify changes by:
 | `platform/esp32c3/` | ESP-IDF project + auto-gen cross-file |
 | `platform/qemu-a9-rtthread/` | RT-Thread BSP + Meson cross-file |
 | `scripts/gen-esp32c3-cross.py` | Generate ESP32-C3 Meson cross-file |
+| `tools/qemu-run.sh` | Unified QEMU launcher (-m qemu-a9 / -m esp32c3) |
+| `tools/api-proxy.py` | HTTP→HTTPS proxy for QEMU without TLS |
