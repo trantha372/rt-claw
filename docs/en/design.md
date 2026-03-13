@@ -26,6 +26,7 @@ Key principles:
 - **Short chains**: sense → decide → act, at most two layers of indirection
 - **Determinism first**: real-time tasks never depend on AI responses
 - **Resource respect**: ESP32-C3 has only 240KB usable SRAM — every byte counts
+- **Swarm amplification**: one node is limited; a swarm of nodes is boundless
 
 ## Event Priority Model
 
@@ -97,6 +98,147 @@ Five layers mapped to existing modules:
 |  Environment sensing, node discovery, data collection    |
 +----------------------------------------------------------+
 ```
+
+## Swarm Intelligence — Core Differentiator
+
+**A single node's resources are limited; a swarm's resources are boundless.**
+
+One ESP32-C3 has 240KB SRAM, one set of GPIO pins, one WiFi antenna.
+But 10 rt-claw nodes networked together provide:
+- 10x GPIO pins distributed across physical locations
+- 10x sensor coverage spanning a larger physical space
+- 10x parallel AI call capacity for faster responses
+- Capability sharing — Node A has LCD, Node B has temperature sensor;
+  AI can read temperature from B and display it on A's screen
+
+This is the **core differentiator** between rt-claw and single-device solutions
+like MimiClaw.
+
+### Current State
+
+Implemented swarm infrastructure:
+
+```
+Node A                          Node B
++--------+    UDP broadcast     +--------+
+| swarm  |<------ 5300 ------->| swarm  |
+| discov.|    heartbeat 5s     | discov.|
++--------+                     +--------+
+    |  join/leave event             |
+    v                               v
++----------+                   +----------+
+| heartbeat|                   | heartbeat|
+| event agg|                   | event agg|
++----------+                   +----------+
+```
+
+- UDP broadcast discovery (port 5300, interval 5s)
+- 16-byte compact heartbeat (magic + node_id + uptime + capabilities + load + port)
+- Node state tracking (OFFLINE / DISCOVERING / ONLINE)
+- 15-second timeout detection
+- Node join/leave events pushed to heartbeat
+
+### Evolution Roadmap
+
+#### Step 1: Capability Bitmap Broadcast
+
+The heartbeat packet already has a `capabilities` field (currently fixed at 0).
+Populate it with real capability bits.
+
+```c
+/* services/swarm/swarm.c — capability bit definitions */
+#define SWARM_CAP_GPIO      (1 << 0)  /* controllable GPIO */
+#define SWARM_CAP_LCD       (1 << 1)  /* LCD display */
+#define SWARM_CAP_SENSOR    (1 << 2)  /* sensors attached */
+#define SWARM_CAP_CAMERA    (1 << 3)  /* camera */
+#define SWARM_CAP_SPEAKER   (1 << 4)  /* audio output */
+#define SWARM_CAP_AI        (1 << 5)  /* AI engine available */
+#define SWARM_CAP_INTERNET  (1 << 6)  /* internet access */
+
+/* In heartbeat_send() */
+hb.capabilities = SWARM_CAP_GPIO | SWARM_CAP_AI | SWARM_CAP_INTERNET;
+/* Actual value determined by platform / Kconfig */
+```
+
+**Effort:** ~20 lines. After discovery, any node can query "who has LCD" or
+"who has sensors".
+
+#### Step 2: Remote Tool Invocation (Claw Skill Provider)
+
+Core idea: **one node's tools are the entire swarm's tools**.
+
+```
+Node A (has LCD)                   Node B (no LCD)
++-----------+                      +-----------+
+| tool:     |    GW_MSG_SWARM      | AI Engine |
+| lcd_draw  |<-----[RPC req]-------| "draw a   |
+|           |------[RPC resp]----->|  circle"  |
++-----------+                      +-----------+
+```
+
+Implementation: reuse Gateway's `GW_MSG_SWARM` message type + existing UDP channel.
+
+```c
+/* Message format (fits in gateway_msg's 256-byte payload) */
+struct swarm_rpc_msg {
+    uint32_t src_node;          /* requester */
+    uint32_t dst_node;          /* executor */
+    uint16_t seq;               /* sequence number */
+    uint8_t  type;              /* 0=request, 1=response */
+    char     tool_name[32];     /* tool name */
+    char     params_json[187];  /* input params JSON */
+};
+
+/* Node B's AI finds no local lcd_draw → queries swarm →
+   Node A has SWARM_CAP_LCD → sends RPC → Node A executes → returns result */
+```
+
+Tool lookup logic (transparent to AI):
+1. Try local `claw_tool_find(name)` → found: execute locally
+2. Not found → query swarm capability table → found: send RPC
+3. Neither → return "tool not available"
+
+**Effort:** ~150 lines. Modify `claw/tools/` + `claw/services/swarm/`.
+
+#### Step 3: Distributed Perception Aggregation
+
+Multi-node sensor data converges to one node for decision making.
+
+```
+Node C (temperature sensor)  --heartbeat_post--> Node A (AI decision hub)
+Node D (humidity sensor)     --heartbeat_post--> aggregates all node data
+Node E (light sensor)        --heartbeat_post--> generates environment report
+```
+
+Extend heartbeat event format to support cross-node event broadcasting.
+Nodes broadcast sensor readings as events; AI node aggregates and decides.
+
+**Effort:** ~100 lines. Extend `core/heartbeat.c` + `services/swarm/swarm.c`.
+
+#### Step 4: Task Migration
+
+When one node is heavily loaded, migrate AI tasks to idle nodes.
+
+```
+Node A (load=80%)  --> "handle this AI request for me" --> Node B (load=20%)
+```
+
+Heartbeat packet already carries `load` field for load awareness.
+This is the most distant goal — requires steps 1-3 to be stable first.
+
+### Swarm Resource Comparison
+
+| Metric | Single Node (ESP32-C3) | 5-Node Swarm | 10-Node Swarm |
+|--------|----------------------|-------------|--------------|
+| Usable SRAM | 240KB | 1.2MB | 2.4MB |
+| GPIO Pins | 22 | 110 | 220 |
+| Sensor Locations | 1 point | 5 points | 10 points |
+| Parallel AI Calls | 1 | 5 | 10 |
+| Physical Coverage | ~5m | ~25m | ~50m |
+| Peripheral Types | limited to one board | shared across all | shared across all |
+
+**Key insight:** the swarm lets every node access the entire network's hardware
+capabilities, while each node only bears its own resource cost.
 
 ## Designs Adopted from MimiClaw
 
@@ -194,7 +336,7 @@ Enrich system prompt with device state at each AI call:
 | `tools/gpio` | GPIO read/write | + safety policy allowlist |
 | `tools/sched` | AI-created tasks | + persistence recovery |
 | `heartbeat` | Periodic AI check-in | + event log aggregation |
-| `swarm` | UDP heartbeat discovery | + capability broadcast + task dispatch |
+| `swarm` | UDP heartbeat discovery | + capability bitmap → remote RPC → distributed perception → task migration |
 
 ## Resource Budget
 
@@ -206,9 +348,9 @@ Enrich system prompt with device state at each AI call:
 | Gateway + Scheduler | ~12KB | +1KB | NVS persistence buffer |
 | AI Engine + Memory | ~15KB | +2KB | Context injection string |
 | Tools | ~4KB | +1KB | GPIO safety policy table |
-| Swarm + Heartbeat | ~14KB | — | No change |
+| Swarm + Heartbeat | ~14KB | +3KB | Capability bitmap + RPC buffer |
 | Shell + App | ~10KB | — | No change |
-| **Total** | **~215KB** | **+4KB** | ~21KB headroom |
+| **Total** | **~215KB** | **+7KB** | ~18KB headroom |
 
 ### ESP32-S3 (8MB PSRAM)
 
@@ -225,11 +367,15 @@ Ordered by value / effort ratio. Each item is independent.
 | 1 | GPIO safety policy | ~50 lines | Prevent AI from damaging hardware pins |
 | 2 | Context injection | ~30 lines | AI-aware of device state, more accurate |
 | 3 | Dual-core binding (S3) | Config only | Isolate network from app, reduce jitter |
-| 4 | Scheduler persistence | ~60 lines | Restore AI automations across reboots |
-| 5 | Event journal layer | ~80 lines | Heartbeat patrol gets historical context |
-| 6 | Multi-LLM format (opt.) | ~100 lines | Direct connect to OpenAI-compatible APIs |
+| 4 | Swarm capability bitmap | ~20 lines | Nodes know each other's hardware |
+| 5 | Scheduler persistence | ~60 lines | Restore AI automations across reboots |
+| 6 | Swarm remote tool invocation | ~150 lines | One node's tools = entire swarm's tools |
+| 7 | Event journal layer | ~80 lines | Heartbeat patrol gets historical context |
+| 8 | Distributed perception | ~100 lines | Multi-node sensor data convergence |
+| 9 | Multi-LLM format (opt.) | ~100 lines | Direct connect to OpenAI-compatible APIs |
 
-**Total: ~320 lines of code changes** covering 80% of the design evolution goals.
+**Total: ~590 lines of code changes** covering the full design evolution.
+Swarm-related work is ~270 lines — the highest-differentiation investment.
 
 ## What We Won't Build
 
@@ -240,3 +386,5 @@ Explicitly listed to prevent over-engineering:
 - **No filesystem**: NVS key-value pairs cover all persistence needs
 - **No complex middleware**: Sense → decide → act, two layers of indirection max
 - **No dynamic loading**: Static linking on MCU; features controlled by Kconfig toggles
+- **No service registry**: Swarm nodes use direct UDP broadcast; no central coordinator
+- **No consensus protocol**: Swarm is loosely coupled — node failure doesn't affect others
