@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: MIT
  */
 
-#ifndef __CLAW_AI_ENGINE_H__
-#define __CLAW_AI_ENGINE_H__
+#ifndef CLAW_SERVICES_AI_ENGINE_H
+#define CLAW_SERVICES_AI_ENGINE_H
 
 #include "claw_os.h"
 
@@ -39,4 +39,4 @@ int ai_chat(const char *user_msg, char *reply, size_t reply_size);
  */
 int ai_chat_raw(const char *prompt, char *reply, size_t reply_size);
 
-#endif /* __CLAW_AI_ENGINE_H__ */
+#endif /* CLAW_SERVICES_AI_ENGINE_H */

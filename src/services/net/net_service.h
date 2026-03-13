@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: MIT
  */
 
-#ifndef __CLAW_NET_SERVICE_H__
-#define __CLAW_NET_SERVICE_H__
+#ifndef CLAW_SERVICES_NET_SERVICE_H
+#define CLAW_SERVICES_NET_SERVICE_H
 
 #include "claw_os.h"
 
 int net_service_init(void);
 
-#endif /* __CLAW_NET_SERVICE_H__ */
+#endif /* CLAW_SERVICES_NET_SERVICE_H */

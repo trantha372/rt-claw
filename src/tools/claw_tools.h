@@ -5,8 +5,8 @@
  * Tool framework — register hardware capabilities as LLM tools.
  */
 
-#ifndef __CLAW_TOOLS_H__
-#define __CLAW_TOOLS_H__
+#ifndef CLAW_TOOLS_H
+#define CLAW_TOOLS_H
 
 #include "claw_os.h"
 #include "cJSON.h"
@@ -133,4 +133,4 @@ void claw_lcd_status(const char *msg);
  */
 void claw_lcd_progress(int percent);
 
-#endif /* __CLAW_TOOLS_H__ */
+#endif /* CLAW_TOOLS_H */

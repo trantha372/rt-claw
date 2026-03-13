@@ -5,8 +5,8 @@
  * Swarm service - node discovery, heartbeat, and task distribution.
  */
 
-#ifndef __CLAW_SWARM_H__
-#define __CLAW_SWARM_H__
+#ifndef CLAW_SERVICES_SWARM_H
+#define CLAW_SERVICES_SWARM_H
 
 #include "claw_os.h"
 #include "claw_config.h"
@@ -46,4 +46,4 @@ uint32_t swarm_self_id(void);
 int  swarm_node_count(void);
 void swarm_list_nodes(void);
 
-#endif /* __CLAW_SWARM_H__ */
+#endif /* CLAW_SERVICES_SWARM_H */

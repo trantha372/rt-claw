@@ -9,8 +9,8 @@
  *   - claw_os_rtthread.c  (RT-Thread)
  */
 
-#ifndef __CLAW_OS_H__
-#define __CLAW_OS_H__
+#ifndef CLAW_OS_H
+#define CLAW_OS_H
 
 #include <stdint.h>
 #include <stddef.h>
@@ -120,4 +120,4 @@ uint32_t claw_tick_ms(void);
 }
 #endif
 
-#endif /* __CLAW_OS_H__ */
+#endif /* CLAW_OS_H */

@@ -5,9 +5,9 @@
  * Explicit initialization entry — called by each platform's main().
  */
 
-#ifndef __CLAW_INIT_H__
-#define __CLAW_INIT_H__
+#ifndef CLAW_INIT_H
+#define CLAW_INIT_H
 
 int claw_init(void);
 
-#endif /* __CLAW_INIT_H__ */
+#endif /* CLAW_INIT_H */

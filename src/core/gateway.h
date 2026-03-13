@@ -5,8 +5,8 @@
  * Message gateway - central message routing and channel management.
  */
 
-#ifndef __CLAW_GATEWAY_H__
-#define __CLAW_GATEWAY_H__
+#ifndef CLAW_CORE_GATEWAY_H
+#define CLAW_CORE_GATEWAY_H
 
 #include "claw_os.h"
 #include "claw_config.h"
@@ -29,4 +29,4 @@ struct gateway_msg {
 int gateway_init(void);
 int gateway_send(struct gateway_msg *msg);
 
-#endif /* __CLAW_GATEWAY_H__ */
+#endif /* CLAW_CORE_GATEWAY_H */
