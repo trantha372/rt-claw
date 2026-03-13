@@ -175,22 +175,40 @@ void claw_mq_delete(claw_mq_t mq)
 
 /* ---------- Timer ---------- */
 
+typedef struct {
+    void (*callback)(void *arg);
+    void *arg;
+} timer_ctx_t;
+
+static void timer_trampoline(TimerHandle_t xTimer)
+{
+    timer_ctx_t *ctx = (timer_ctx_t *)pvTimerGetTimerID(xTimer);
+    if (ctx && ctx->callback) {
+        ctx->callback(ctx->arg);
+    }
+}
+
 claw_timer_t claw_timer_create(const char *name,
                                 void (*callback)(void *arg),
                                 void *arg,
                                 uint32_t period_ms,
                                 int repeat)
 {
-    /*
-     * FreeRTOS timer callback signature is void cb(TimerHandle_t).
-     * We store the user callback+arg via timer ID and use a trampoline.
-     * For simplicity, cast directly — the user callback receives arg
-     * through the timer's pvTimerID field.
-     */
+    timer_ctx_t *ctx = pvPortMalloc(sizeof(*ctx));
+    if (!ctx) {
+        return NULL;
+    }
+    ctx->callback = callback;
+    ctx->arg = arg;
+
     TimerHandle_t t = xTimerCreate(name, pdMS_TO_TICKS(period_ms),
                                     repeat ? pdTRUE : pdFALSE,
-                                    arg,
-                                    (TimerCallbackFunction_t)callback);
+                                    ctx,
+                                    timer_trampoline);
+    if (!t) {
+        vPortFree(ctx);
+        return NULL;
+    }
     return (claw_timer_t)t;
 }
 
@@ -206,7 +224,12 @@ void claw_timer_stop(claw_timer_t timer)
 
 void claw_timer_delete(claw_timer_t timer)
 {
-    xTimerDelete((TimerHandle_t)timer, 0);
+    TimerHandle_t t = (TimerHandle_t)timer;
+    timer_ctx_t *ctx = (timer_ctx_t *)pvTimerGetTimerID(t);
+    xTimerDelete(t, 0);
+    if (ctx) {
+        vPortFree(ctx);
+    }
 }
 
 /* ---------- Memory ---------- */
