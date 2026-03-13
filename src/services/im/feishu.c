@@ -638,9 +638,16 @@ static void ai_worker_thread(void *arg)
         }
 
         /*
-         * Set reply context so that any schedule_task created during
-         * this ai_chat call will route results back to this chat.
+         * Tell the AI which channel is active so it produces
+         * appropriate prompts for scheduled tasks, and set the
+         * reply context so results route back to this chat.
          */
+        ai_set_channel_hint(
+            " You are communicating via Feishu IM."
+            " All outputs (including scheduled task results)"
+            " will be delivered to this Feishu conversation."
+            " Do NOT mention LCD or serial console unless"
+            " the user explicitly asks.");
         sched_set_reply_context(sched_reply_to_feishu, chat_id);
 
         CLAW_LOGI(TAG, "[%lu ms] ... ai_chat start: \"%s\"",
@@ -649,6 +656,7 @@ static void ai_worker_thread(void *arg)
         CLAW_LOGI(TAG, "[%lu ms] ... ai_chat done, ret=%d",
                   (unsigned long)claw_tick_ms(), ret);
 
+        ai_set_channel_hint(NULL);
         sched_set_reply_context(NULL, NULL);
         if (ret == CLAW_OK && reply[0] != '\0') {
             CLAW_LOGI(TAG, "[%lu ms] >>> sending reply: \"%.120s%s\"",

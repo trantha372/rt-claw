@@ -45,6 +45,7 @@
 
 static claw_mutex_t s_api_lock;
 static ai_status_cb_t s_status_cb;
+static char s_channel_hint[128];
 
 static inline void notify_status(int st, const char *detail)
 {
@@ -56,6 +57,15 @@ static inline void notify_status(int st, const char *detail)
 void ai_set_status_cb(ai_status_cb_t cb)
 {
     s_status_cb = cb;
+}
+
+void ai_set_channel_hint(const char *hint)
+{
+    if (hint) {
+        snprintf(s_channel_hint, sizeof(s_channel_hint), "%s", hint);
+    } else {
+        s_channel_hint[0] = '\0';
+    }
 }
 
 static const char *SYSTEM_PROMPT =
@@ -455,22 +465,21 @@ static cJSON *build_request(const char *system_prompt,
 
 static char *build_system_prompt(void)
 {
-    char *ltm_ctx = ai_ltm_build_context();
-    if (!ltm_ctx) {
-        size_t len = strlen(SYSTEM_PROMPT);
-        char *p = claw_malloc(len + 1);
-        if (p) {
-            memcpy(p, SYSTEM_PROMPT, len + 1);
-        }
-        return p;
-    }
-
     size_t base_len = strlen(SYSTEM_PROMPT);
-    size_t ctx_len = strlen(ltm_ctx);
-    char *p = claw_malloc(base_len + ctx_len + 1);
+    size_t hint_len = strlen(s_channel_hint);
+    char *ltm_ctx = ai_ltm_build_context();
+    size_t ltm_len = ltm_ctx ? strlen(ltm_ctx) : 0;
+
+    char *p = claw_malloc(base_len + hint_len + ltm_len + 1);
     if (p) {
         memcpy(p, SYSTEM_PROMPT, base_len);
-        memcpy(p + base_len, ltm_ctx, ctx_len + 1);
+        if (hint_len > 0) {
+            memcpy(p + base_len, s_channel_hint, hint_len);
+        }
+        if (ltm_len > 0) {
+            memcpy(p + base_len + hint_len, ltm_ctx, ltm_len);
+        }
+        p[base_len + hint_len + ltm_len] = '\0';
     }
     claw_free(ltm_ctx);
     return p;

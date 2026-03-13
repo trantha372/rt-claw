@@ -20,6 +20,14 @@ void ai_set_status_cb(ai_status_cb_t cb);
 int ai_engine_init(void);
 
 /**
+ * Set channel hint appended to the system prompt.
+ * Call before ai_chat() to tell the model which channel is active
+ * (e.g. "Feishu IM", "serial console").  Pass NULL to clear.
+ * The string is copied internally; caller may free after return.
+ */
+void ai_set_channel_hint(const char *hint);
+
+/**
  * Send a user message to the LLM and receive a reply.
  * Stores user/assistant messages in conversation memory.
  */
