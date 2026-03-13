@@ -88,8 +88,7 @@ scenario without writing, compiling, or flashing embedded code again.
 > **No hardware? No problem.** Open
 > [cnb.cool/gevico.online/rtclaw/rt-claw](https://cnb.cool/gevico.online/rtclaw/rt-claw)
 > to launch a CNB Cloud-Native IDE with all toolchains pre-installed.
-> Build and run RT-Claw on QEMU directly in your browser — just follow
-> the steps below.
+> Build and run RT-Claw on QEMU directly in your browser.
 
 ### ESP32-C3 (ESP-IDF + QEMU)
 
