@@ -40,6 +40,15 @@ struct __attribute__((packed)) swarm_heartbeat {
 
 #define SWARM_HEARTBEAT_MAGIC   0x434C4157  /* "CLAW" */
 
+/* Capability bitmap — advertised in heartbeat packets */
+#define SWARM_CAP_GPIO      (1 << 0)  /* controllable GPIO */
+#define SWARM_CAP_LCD       (1 << 1)  /* LCD display */
+#define SWARM_CAP_SENSOR    (1 << 2)  /* sensor input */
+#define SWARM_CAP_CAMERA    (1 << 3)  /* camera */
+#define SWARM_CAP_SPEAKER   (1 << 4)  /* audio output */
+#define SWARM_CAP_AI        (1 << 5)  /* AI engine available */
+#define SWARM_CAP_INTERNET  (1 << 6)  /* external network */
+
 int  swarm_init(void);
 int  swarm_start(void);
 uint32_t swarm_self_id(void);

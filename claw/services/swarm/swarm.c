@@ -26,13 +26,20 @@ static uint32_t s_self_id;
 /* Node ID generation — platform-specific hardware identity */
 #ifdef CLAW_PLATFORM_ESP_IDF
 #include "esp_mac.h"
+#include "esp_random.h"
 
 static uint32_t generate_node_id(void)
 {
     uint8_t mac[6];
     esp_efuse_mac_get_default(mac);
-    return ((uint32_t)mac[2] << 24) | ((uint32_t)mac[3] << 16) |
-           ((uint32_t)mac[4] << 8)  | (uint32_t)mac[5];
+    uint32_t id = ((uint32_t)mac[2] << 24) | ((uint32_t)mac[3] << 16) |
+                  ((uint32_t)mac[4] << 8)  | (uint32_t)mac[5];
+    /*
+     * Mix in hardware random bits so QEMU instances (which share
+     * the same efuse MAC) get distinct node IDs.
+     */
+    id ^= (esp_random() & 0xFFFF);
+    return id;
 }
 
 #elif defined(CLAW_PLATFORM_RTTHREAD)
@@ -64,6 +71,12 @@ static void notify_node_event(uint32_t node_id, int joined)
 {
     CLAW_LOGI(TAG, "node 0x%08x %s",
               (unsigned)node_id, joined ? "joined" : "left");
+    /*
+     * Also print via claw_log_raw so it's visible even when
+     * esp_log is silenced (shell mode).
+     */
+    claw_log_raw("  [swarm] node 0x%08x %s\n",
+                 (unsigned)node_id, joined ? "joined" : "left");
 #ifdef CONFIG_RTCLAW_HEARTBEAT_ENABLE
     char msg[48];
     snprintf(msg, sizeof(msg), "node 0x%08x %s",
@@ -90,6 +103,30 @@ static int find_or_add_node(uint32_t node_id)
     return -1;
 }
 
+static uint8_t build_capabilities(void)
+{
+    uint8_t caps = 0;
+
+#ifdef CONFIG_RTCLAW_TOOL_GPIO
+    caps |= SWARM_CAP_GPIO;
+#endif
+#ifdef CONFIG_RTCLAW_LCD_ENABLE
+    caps |= SWARM_CAP_LCD;
+#endif
+#ifdef CONFIG_RTCLAW_AI_API_KEY
+    if (CONFIG_RTCLAW_AI_API_KEY[0] != '\0') {
+        caps |= SWARM_CAP_AI;
+    }
+#endif
+    /* WiFi-capable boards have internet when connected */
+#if defined(CONFIG_RTCLAW_WIFI_ENABLE) || \
+    defined(CONFIG_ESP_WIFI_STATIC_RX_BUFFER_NUM)
+    caps |= SWARM_CAP_INTERNET;
+#endif
+
+    return caps;
+}
+
 static void heartbeat_send(void)
 {
     if (s_sock < 0) {
@@ -100,7 +137,7 @@ static void heartbeat_send(void)
     hb.magic = SWARM_HEARTBEAT_MAGIC;
     hb.node_id = s_self_id;
     hb.uptime_s = claw_tick_ms() / 1000;
-    hb.capabilities = 0;
+    hb.capabilities = build_capabilities();
     hb.load = 0;
     hb.port = CLAW_SWARM_PORT;
 
@@ -231,6 +268,7 @@ int swarm_start(void)
         return CLAW_ERROR;
     }
     claw_timer_start(s_hb_timer);
+    heartbeat_send(); /* first heartbeat immediately, don't wait for timer */
 
     claw_thread_t rx = claw_thread_create("swarm_rx", receiver_thread,
                                            NULL,

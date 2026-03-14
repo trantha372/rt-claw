@@ -362,17 +362,17 @@ Internal SRAM budget similar to C3; PSRAM provides ample headroom.
 
 Ordered by value / effort ratio. Each item is independent.
 
-| Phase | Content | Effort | Value |
-|-------|---------|--------|-------|
-| 1 | GPIO safety policy | ~50 lines | Prevent AI from damaging hardware pins |
-| 2 | Context injection | ~30 lines | AI-aware of device state, more accurate |
-| 3 | Dual-core binding (S3) | Config only | Isolate network from app, reduce jitter |
-| 4 | Swarm capability bitmap | ~20 lines | Nodes know each other's hardware |
-| 5 | Scheduler persistence | ~60 lines | Restore AI automations across reboots |
-| 6 | Swarm remote tool invocation | ~150 lines | One node's tools = entire swarm's tools |
-| 7 | Event journal layer | ~80 lines | Heartbeat patrol gets historical context |
-| 8 | Distributed perception | ~100 lines | Multi-node sensor data convergence |
-| 9 | Multi-LLM format (opt.) | ~100 lines | Direct connect to OpenAI-compatible APIs |
+| Phase | Content | Effort | Value | Status |
+|-------|---------|--------|-------|--------|
+| 1 | GPIO safety policy | ~50 lines | Prevent AI from damaging hardware pins | Done |
+| 2 | Context injection | ~30 lines | AI-aware of device state, more accurate | Done |
+| 3 | Dual-core binding (S3) | Config only | Isolate network from app, reduce jitter | Done |
+| 4 | Swarm capability bitmap | ~20 lines | Nodes know each other's hardware | Done |
+| 5 | Scheduler persistence | ~60 lines | Restore AI automations across reboots | Done |
+| 6 | Swarm remote tool invocation | ~150 lines | One node's tools = entire swarm's tools | |
+| 7 | Event journal layer | ~80 lines | Heartbeat patrol gets historical context | |
+| 8 | Distributed perception | ~100 lines | Multi-node sensor data convergence | |
+| 9 | Multi-LLM format (opt.) | ~100 lines | Direct connect to OpenAI-compatible APIs | |
 
 **Total: ~590 lines of code changes** covering the full design evolution.
 Swarm-related work is ~270 lines — the highest-differentiation investment.

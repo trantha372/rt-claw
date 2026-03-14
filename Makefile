@@ -296,6 +296,19 @@ clean-vexpress-a9:
 clean-esp32s3:
 	rm -rf $(BUILD_DIR)/esp32s3-*
 
+# --- Tests ---
+
+.PHONY: swarm-test
+swarm-test: run-esp32c3-qemu-flash
+	scripts/swarm-test.sh
+
+# Build + generate flash image only (no interactive QEMU)
+.PHONY: run-esp32c3-qemu-flash
+run-esp32c3-qemu-flash: build-esp32c3-qemu
+	@echo ">>> Generating merged flash image ..."
+	cd $(BUILD_DIR)/esp32c3-qemu/idf && esptool.py --chip esp32c3 merge_bin \
+		--fill-flash-size 4MB -o flash_image.bin @flash_args
+
 # --- Checks ---
 .PHONY: check
 check:

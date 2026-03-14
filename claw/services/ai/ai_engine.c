@@ -13,6 +13,16 @@
 #include "claw/tools/claw_tools.h"
 #include "cJSON.h"
 
+#ifdef CONFIG_RTCLAW_SCHED_ENABLE
+#include "claw/core/scheduler.h"
+#endif
+#ifdef CONFIG_RTCLAW_SWARM_ENABLE
+#include "claw/services/swarm/swarm.h"
+#endif
+#ifdef CLAW_PLATFORM_ESP_IDF
+#include "esp_system.h"
+#endif
+
 #include <string.h>
 #include <stdio.h>
 
@@ -158,23 +168,84 @@ static cJSON *build_request(const char *system_prompt,
     return req;
 }
 
+/*
+ * Build "[Device Context]" section with runtime device state.
+ * Returns bytes written into buf.
+ */
+static int build_device_context(char *buf, size_t size)
+{
+    uint32_t uptime_s = claw_tick_ms() / 1000;
+    uint32_t hrs = uptime_s / 3600;
+    uint32_t mins = (uptime_s % 3600) / 60;
+
+    int off = snprintf(buf, size,
+                       "\n\n[Device Context]\n"
+                       "- Platform: "
+#if defined(CONFIG_IDF_TARGET_ESP32C3)
+                       "ESP32-C3"
+#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+                       "ESP32-S3"
+#elif defined(CLAW_PLATFORM_RTTHREAD)
+                       "vexpress-a9 (RT-Thread)"
+#else
+                       "unknown"
+#endif
+                       "\n- Uptime: %uh %um\n",
+                       (unsigned)hrs, (unsigned)mins);
+
+#ifdef CLAW_PLATFORM_ESP_IDF
+    off += snprintf(buf + off, size - off,
+                    "- Free heap: %u bytes\n",
+                    (unsigned)esp_get_free_heap_size());
+#endif
+
+#ifdef CONFIG_RTCLAW_SCHED_ENABLE
+    off += snprintf(buf + off, size - off,
+                    "- Scheduled tasks: %d active\n",
+                    sched_task_count());
+#endif
+
+#ifdef CONFIG_RTCLAW_SWARM_ENABLE
+    off += snprintf(buf + off, size - off,
+                    "- Swarm nodes: %d online\n",
+                    swarm_node_count());
+#endif
+
+    off += snprintf(buf + off, size - off,
+                    "- Conversation memory: %d messages, "
+                    "long-term: %d facts\n",
+                    ai_memory_count(), ai_ltm_count());
+
+    return off;
+}
+
 static char *build_system_prompt(void)
 {
+    char dev_ctx[512];
+    int dev_len = build_device_context(dev_ctx, sizeof(dev_ctx));
+
     size_t base_len = strlen(SYSTEM_PROMPT);
     size_t hint_len = strlen(s_channel_hint);
     char *ltm_ctx = ai_ltm_build_context();
     size_t ltm_len = ltm_ctx ? strlen(ltm_ctx) : 0;
 
-    char *p = claw_malloc(base_len + hint_len + ltm_len + 1);
+    size_t total = base_len + hint_len + dev_len + ltm_len + 1;
+    char *p = claw_malloc(total);
     if (p) {
-        memcpy(p, SYSTEM_PROMPT, base_len);
+        size_t off = 0;
+        memcpy(p + off, SYSTEM_PROMPT, base_len);
+        off += base_len;
         if (hint_len > 0) {
-            memcpy(p + base_len, s_channel_hint, hint_len);
+            memcpy(p + off, s_channel_hint, hint_len);
+            off += hint_len;
         }
+        memcpy(p + off, dev_ctx, dev_len);
+        off += dev_len;
         if (ltm_len > 0) {
-            memcpy(p + base_len + hint_len, ltm_ctx, ltm_len);
+            memcpy(p + off, ltm_ctx, ltm_len);
+            off += ltm_len;
         }
-        p[base_len + hint_len + ltm_len] = '\0';
+        p[off] = '\0';
     }
     claw_free(ltm_ctx);
     return p;
