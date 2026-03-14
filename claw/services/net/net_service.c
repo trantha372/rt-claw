@@ -143,41 +143,51 @@ int net_service_init(void)
     }
 
     /*
-     * DHCP wait: 500ms is enough for SLIRP (responds instantly).
-     * On mcast-socket networks (no DHCP server), this falls through
-     * quickly to the link-local fallback, keeping QEMU boot fast.
+     * DHCP wait: 2000ms gives SLIRP enough time even under
+     * instruction-counted mode (-icount).  On mcast-socket
+     * networks (no DHCP server), this falls through to the
+     * static IP fallback.
      */
     CLAW_LOGI(TAG, "waiting for IP address (DHCP) ...");
-    int ret = claw_sem_take(s_got_ip_sem, 500);
+    int ret = claw_sem_take(s_got_ip_sem, 2000);
     if (ret != CLAW_OK) {
-        CLAW_LOGW(TAG, "DHCP timeout, falling back to link-local IP");
+        CLAW_LOGW(TAG, "DHCP timeout, falling back to static IP");
 
+        esp_netif_ip_info_t ip_info;
+#ifdef CONFIG_ETH_USE_OPENETH
         /*
-         * Assign a link-local address derived from MAC.
-         * This enables swarm UDP on mcast-socket QEMU networks
-         * where no DHCP server is available.
+         * QEMU SLIRP defaults: the user-mode network stack
+         * provides NAT at 10.0.2.2 and DNS at 10.0.2.3.
+         * Use a static IP in the SLIRP subnet so that
+         * gateway routing and DNS resolution work even
+         * when DHCP times out under -icount.
+         */
+        IP4_ADDR(&ip_info.ip,      10, 0, 2, 15);
+        IP4_ADDR(&ip_info.netmask, 255, 255, 255, 0);
+        IP4_ADDR(&ip_info.gw,      10, 0, 2, 2);
+#else
+        /*
+         * Non-QEMU Ethernet: link-local address derived from
+         * MAC for swarm UDP on isolated networks.
          */
         uint8_t mac[6];
         esp_efuse_mac_get_default(mac);
-
-        esp_netif_ip_info_t ip_info;
         IP4_ADDR(&ip_info.ip,      169, 254, mac[4], mac[5] ? mac[5] : 1);
         IP4_ADDR(&ip_info.netmask, 255, 255, 0, 0);
         IP4_ADDR(&ip_info.gw,      0, 0, 0, 0);
+#endif
 
         esp_netif_dhcpc_stop(s_eth_netif);
         esp_netif_set_ip_info(s_eth_netif, &ip_info);
-
         CLAW_LOGI(TAG, "static ip: " IPSTR, IP2STR(&ip_info.ip));
-    } else {
-        /* QEMU user-mode NAT DNS is at 10.0.2.3 */
+    }
+
+    /* QEMU user-mode NAT DNS is at 10.0.2.3 */
+    {
         ip_addr_t dns_addr;
         ipaddr_aton("10.0.2.3", &dns_addr);
         dns_setserver(0, &dns_addr);
         CLAW_LOGI(TAG, "DNS server set to 10.0.2.3");
-
-        /* Connectivity test — DNS + HTTP */
-        http_get_test("http://www.baidu.com");
     }
 
     CLAW_LOGI(TAG, "network service ready");
