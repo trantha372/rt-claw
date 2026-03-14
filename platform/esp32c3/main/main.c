@@ -239,7 +239,7 @@ void app_main(void)
     }
 
 #ifdef CONFIG_RTCLAW_SHELL_ENABLE
-    esp_log_level_set("*", ESP_LOG_NONE);
+    esp_log_level_set("*", ESP_LOG_WARN);
 #else
     claw_log_set_enabled(1);
 #endif
