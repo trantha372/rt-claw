@@ -232,10 +232,10 @@ static void draw_char(int x, int y, char ch)
     }
     const uint8_t *glyph = font8x8[ch - 32];
 
-    for (int col = 0; col < 8; col++) {
-        uint8_t line = glyph[col];
-        for (int row = 0; row < 8; row++) {
-            ssd1306_set_pixel(x + col, y + row, (line >> row) & 1);
+    for (int row = 0; row < 8; row++) {
+        uint8_t line = glyph[row];
+        for (int col = 0; col < 8; col++) {
+            ssd1306_set_pixel(x + col, y + row, (line >> col) & 1);
         }
     }
 }
