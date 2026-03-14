@@ -19,6 +19,9 @@
 #ifdef CONFIG_RTCLAW_SWARM_ENABLE
 #include "claw/services/swarm/swarm.h"
 #endif
+#ifdef CONFIG_RTCLAW_SKILL_ENABLE
+#include "claw/services/ai/ai_skill.h"
+#endif
 #ifdef CLAW_PLATFORM_ESP_IDF
 #include "esp_system.h"
 #endif
@@ -229,7 +232,15 @@ static char *build_system_prompt(void)
     char *ltm_ctx = ai_ltm_build_context();
     size_t ltm_len = ltm_ctx ? strlen(ltm_ctx) : 0;
 
-    size_t total = base_len + hint_len + dev_len + ltm_len + 1;
+#ifdef CONFIG_RTCLAW_SKILL_ENABLE
+    char *skill_ctx = ai_skill_build_summary();
+#else
+    char *skill_ctx = NULL;
+#endif
+    size_t skill_len = skill_ctx ? strlen(skill_ctx) : 0;
+
+    size_t total = base_len + hint_len + dev_len
+                   + ltm_len + skill_len + 1;
     char *p = claw_malloc(total);
     if (p) {
         size_t off = 0;
@@ -245,9 +256,14 @@ static char *build_system_prompt(void)
             memcpy(p + off, ltm_ctx, ltm_len);
             off += ltm_len;
         }
+        if (skill_len > 0) {
+            memcpy(p + off, skill_ctx, skill_len);
+            off += skill_len;
+        }
         p[off] = '\0';
     }
     claw_free(ltm_ctx);
+    claw_free(skill_ctx);
     return p;
 }
 

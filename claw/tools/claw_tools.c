@@ -5,6 +5,9 @@
 
 #include "claw/tools/claw_tools.h"
 #include "claw/claw_config.h"
+#ifdef CONFIG_RTCLAW_SKILL_ENABLE
+#include "claw/services/ai/ai_skill.h"
+#endif
 
 #include <string.h>
 
@@ -32,6 +35,9 @@ int claw_tools_init(void)
 #endif
 #ifdef CONFIG_RTCLAW_TOOL_NET
     claw_tools_register_net();
+#endif
+#ifdef CONFIG_RTCLAW_SKILL_ENABLE
+    claw_tools_register_skill();
 #endif
 
     CLAW_LOGI(TAG, "%d tools registered", s_tool_count);
