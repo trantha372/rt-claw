@@ -26,7 +26,7 @@ ESP32-S3 WiFi 支持参考了 [MimiClaw](https://github.com/memovai/mimiclaw)。
   <img src="images/demo.png" alt="RT-Claw 演示 — AI 通过 Tool Use 在 LCD 上绘图" width="700">
 </p>
 
-[架构设计](docs/zh/architecture.md) · [ESP32-C3 QEMU 指南](docs/zh/esp32c3-qemu.md) · [贡献指南](docs/zh/contributing.md) · [编码风格](docs/zh/coding-style.md)
+[快速开始](docs/zh/getting-started.md) · [使用指南](docs/zh/usage.md) · [架构设计](docs/zh/architecture.md) · [移植与扩展](docs/zh/porting.md) · [裁剪与优化](docs/zh/tuning.md) · [贡献指南](docs/zh/contributing.md)
 
 ## 核心理念
 
@@ -378,10 +378,13 @@ rt-claw/
 
 ## 文档
 
+- [快速开始](docs/zh/getting-started.md) — 编译、烧录、运行（全平台）
+- [使用指南](docs/zh/usage.md) — Shell 命令、Tool Use、技能、记忆
+- [架构设计](docs/zh/architecture.md) — OSAL、服务、驱动、构建流程
+- [移植与扩展](docs/zh/porting.md) — 新平台、工具、技能、驱动
+- [裁剪与优化](docs/zh/tuning.md) — 模块裁剪、内存优化、配置参数
 - [编码风格](docs/zh/coding-style.md)
 - [贡献指南](docs/zh/contributing.md)
-- [架构设计](docs/zh/architecture.md)
-- [ESP32-C3 QEMU 指南](docs/zh/esp32c3-qemu.md)
 
 ## 许可证
 

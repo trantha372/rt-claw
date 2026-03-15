@@ -26,7 +26,7 @@ ESP32-S3 WiFi support adapted from [MimiClaw](https://github.com/memovai/mimicla
   <img src="images/demo.png" alt="RT-Claw Demo — AI drawing on LCD via Tool Use" width="700">
 </p>
 
-[Architecture](docs/en/architecture.md) · [ESP32-C3 QEMU Guide](docs/en/esp32c3-qemu.md) · [Contributing](docs/en/contributing.md) · [Coding Style](docs/en/coding-style.md)
+[Getting Started](docs/en/getting-started.md) · [Usage](docs/en/usage.md) · [Architecture](docs/en/architecture.md) · [Porting](docs/en/porting.md) · [Tuning](docs/en/tuning.md) · [Contributing](docs/en/contributing.md)
 
 ## Core Idea
 
@@ -383,10 +383,13 @@ Join the GTOC (Gevico Open-Source Community) channels:
 
 ## Documentation
 
+- [Getting Started](docs/en/getting-started.md) — Build, flash, and run on all platforms
+- [Usage Guide](docs/en/usage.md) — Shell commands, Tool Use, skills, memory
+- [Architecture](docs/en/architecture.md) — OSAL, services, drivers, build flow
+- [Porting & Extension](docs/en/porting.md) — New platforms, tools, skills, drivers
+- [Tuning & Optimization](docs/en/tuning.md) — Module trimming, memory, configuration
 - [Coding Style](docs/en/coding-style.md)
 - [Contributing](docs/en/contributing.md)
-- [Architecture](docs/en/architecture.md)
-- [ESP32-C3 QEMU Guide](docs/en/esp32c3-qemu.md)
 
 ## License
 
