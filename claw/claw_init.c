@@ -117,16 +117,17 @@ int claw_init(void)
     }
 
     /*
-     * Skip AI boot test when Feishu is enabled — both compete
-     * for TLS memory on ESP32-C3 (~40KB per connection) and
-     * the combined peak exceeds available heap.
+     * AI boot test: skip when disabled via Kconfig, or when IM
+     * channels are active (both compete for TLS memory).
      */
+#ifdef CONFIG_RTCLAW_AI_BOOT_TEST
 #if !defined(CONFIG_RTCLAW_FEISHU_ENABLE) && \
     !defined(CONFIG_RTCLAW_TELEGRAM_ENABLE)
     if (!claw_thread_create("ai_test", ai_boot_test_thread,
                             NULL, 8192, 20)) {
         CLAW_LOGW(TAG, "ai_test thread create failed");
     }
+#endif
 #endif
 
     return CLAW_OK;

@@ -23,6 +23,14 @@ menu "rt-claw Configuration"
 
     menu "Module Selection"
 
+        config RTCLAW_AI_BOOT_TEST
+            bool "Run AI connection test at boot"
+            default y
+            help
+                Send a test message to the LLM API during startup
+                to verify connectivity.  Disable on real hardware
+                to save time and bandwidth.
+
         config RTCLAW_SHELL_ENABLE
             bool "Enable interactive UART shell"
             default y
