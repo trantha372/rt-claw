@@ -666,7 +666,7 @@
                 <div class="highlight-num">03</div>
                 <div class="highlight-icon">&#128295;</div>
                 <h3 data-en="LLM Tool Use" data-zh="LLM 工具调用">LLM Tool Use</h3>
-                <p data-en="The AI dynamically orchestrates GPIO, LCD, sensors, and more via function calling. No re-flashing needed." data-zh="AI 通过函数调用动态编排 GPIO、LCD、传感器等。无需重新烧录固件。">The AI dynamically orchestrates GPIO, LCD, sensors, and more via function calling. No re-flashing needed.</p>
+                <p data-en="The AI dynamically orchestrates GPIO, sensors, skills, and more via function calling. No re-flashing needed." data-zh="AI 通过函数调用动态编排 GPIO、传感器、技能等。无需重新烧录固件。">The AI dynamically orchestrates GPIO, sensors, skills, and more via function calling. No re-flashing needed.</p>
             </div>
         </div>
     </div>
@@ -687,12 +687,12 @@
             <div class="feature-card reveal">
                 <div class="feature-icon">&#128295;</div>
                 <h3 data-en="Tool Use" data-zh="工具调用">Tool Use</h3>
-                <p data-en="LLM-driven hardware control via function calling. GPIO, system info, LCD drawing dynamically orchestrated." data-zh="通过函数调用实现 LLM 驱动的硬件控制。GPIO、系统信息、LCD 绘图动态编排。">LLM-driven hardware control via function calling. GPIO, system info, LCD drawing dynamically orchestrated.</p>
+                <p data-en="LLM-driven hardware control via function calling. GPIO, system info, and more dynamically orchestrated." data-zh="通过函数调用实现 LLM 驱动的硬件控制。GPIO、系统信息等动态编排。">LLM-driven hardware control via function calling. GPIO, system info, and more dynamically orchestrated.</p>
             </div>
             <div class="feature-card reveal">
-                <div class="feature-icon">&#127912;</div>
-                <h3 data-en="LCD Graphics" data-zh="LCD 图形">LCD Graphics</h3>
-                <p data-en="320x240 RGB565 framebuffer with text, shapes, drawing primitives. AI draws on screen via tool calls." data-zh="320x240 RGB565 帧缓冲，支持文字、形状、绘图基元。AI 通过工具调用在屏幕上绘图。">320x240 RGB565 framebuffer with text, shapes, drawing primitives. AI draws on screen via tool calls.</p>
+                <div class="feature-icon">&#129513;</div>
+                <h3 data-en="Skill System" data-zh="技能系统">Skill System</h3>
+                <p data-en="Composable skills built from tools. Built-in draw skill drives LCD graphics; new skills are easy to add." data-zh="由工具组合而成的可扩展技能。内置 draw 技能驱动 LCD 绘图；新技能易于添加。">Composable skills built from tools. Built-in draw skill drives LCD graphics; new skills are easy to add.</p>
             </div>
             <div class="feature-card reveal">
                 <div class="feature-icon">&#128736;</div>
@@ -761,8 +761,8 @@
     <div class="container">
         <div class="section-label reveal" data-en="In Action" data-zh="实际演示">In Action</div>
         <h2 class="section-title reveal" data-en="See It Work" data-zh="看看效果">See It Work</h2>
-        <p class="section-subtitle reveal" data-en="AI drawing on LCD via Tool Use — the LLM controls hardware in real time." data-zh="AI 通过工具调用在 LCD 上绘图 —— LLM 实时控制硬件。">AI drawing on LCD via Tool Use — the LLM controls hardware in real time.</p>
-        <img src="img/demo.png" alt="RT-Claw Demo — AI drawing on LCD via Tool Use" class="demo-img reveal">
+        <p class="section-subtitle reveal" data-en="Draw skill in action — the AI composes tools to paint on LCD in real time." data-zh="Draw 技能实战演示 —— AI 组合工具实时在 LCD 上绘图。">Draw skill in action — the AI composes tools to paint on LCD in real time.</p>
+        <img src="img/demo.png" alt="RT-Claw Demo — Draw skill painting on LCD via AI" class="demo-img reveal">
     </div>
 </section>
 
@@ -832,7 +832,7 @@
                 <tbody>
                     <tr><td>LLM Chat Engine</td><td>Interactive conversation with Claude API over HTTP</td><td><span class="badge badge-done">Done</span></td></tr>
                     <tr><td>Tool Use</td><td>LLM-driven hardware control via function calling</td><td><span class="badge badge-done">Done</span></td></tr>
-                    <tr><td>LCD Graphics</td><td>320x240 RGB565 framebuffer with AI drawing</td><td><span class="badge badge-done">Done</span></td></tr>
+                    <tr><td>Skill System</td><td>Composable skills from tools; built-in draw skill for LCD</td><td><span class="badge badge-done">Done</span></td></tr>
                     <tr><td>Chat-first Shell</td><td>UART REPL with AI integration and UTF-8 support</td><td><span class="badge badge-done">Done</span></td></tr>
                     <tr><td>OSAL</td><td>Write once, run on FreeRTOS and RT-Thread</td><td><span class="badge badge-done">Done</span></td></tr>
                     <tr><td>Gateway</td><td>Thread-safe message routing between services</td><td><span class="badge badge-done">Done</span></td></tr>
@@ -1551,6 +1551,8 @@ async function serialConnect() {
         serialKeepReading = true;
         serialReadLoop();
     } catch (e) {
+        serialPort = null;
+        serialWriter = null;
         if (e.name !== 'NotFoundError') {
             serialLogMsg('\n[Error] ' + e.message + '\n', 'serial-msg-error');
         }
@@ -1580,11 +1582,13 @@ async function serialReadLoop() {
 
 async function serialDisconnect() {
     serialKeepReading = false;
-    try {
-        if (serialReader) { await serialReader.cancel(); serialReader.releaseLock(); serialReader = null; }
-        if (serialWriter) { serialWriter.releaseLock(); serialWriter = null; }
-        if (serialPort) { await serialPort.close(); serialPort = null; }
-    } catch (e) { /* ignore */ }
+    try { if (serialReader) { await serialReader.cancel(); } } catch (e) { /* ignore */ }
+    try { if (serialReader) { serialReader.releaseLock(); } } catch (e) { /* ignore */ }
+    serialReader = null;
+    try { if (serialWriter) { serialWriter.releaseLock(); } } catch (e) { /* ignore */ }
+    serialWriter = null;
+    try { if (serialPort) { await serialPort.close(); } } catch (e) { /* ignore */ }
+    serialPort = null;
     var curLang2 = localStorage.getItem('lang') || 'en';
     serialConnectBtn.textContent = curLang2 === 'zh' ? '连接' : 'Connect';
     serialConnectBtn.classList.remove('active');
