@@ -12,7 +12,9 @@
 
 #include "claw_board.h"
 #include "drivers/display/espressif/ssd1306_oled.h"
+#ifdef CONFIG_RTCLAW_AUDIO_ENABLE
 #include "drivers/audio/espressif/es8311_audio.h"
+#endif
 #include "claw/tools/claw_tools.h"
 
 #ifdef CLAW_PLATFORM_ESP_IDF
@@ -96,41 +98,38 @@ void board_early_init(void)
      * different buses depending on revision.
      */
 
-    /* Try V1 pins first (I2C_NUM_0) */
+    /*
+     * Auto-detect board revision by probing OLED on V1 pins.
+     * If not found, try V3 pins.
+     */
     i2c_master_bus_handle_t bus0 = create_i2c_bus(V1_SDA, V1_SCL,
                                                    I2C_NUM_0);
     int oled_on_v1 = 0;
-    int es8311_on_v1 = 0;
     int pa_pin = V1_PA;
 
     if (bus0) {
         i2c_scan(bus0, "V1 SDA=3 SCL=4");
         oled_on_v1 = (i2c_master_probe(bus0, SSD1306_ADDR, 200)
                       == ESP_OK);
-        es8311_on_v1 = (i2c_master_probe(bus0, ES8311_ADDR, 200)
-                        == ESP_OK);
     }
 
-    i2c_master_bus_handle_t bus_audio = bus0;
-
-    if (!es8311_on_v1) {
+    if (!oled_on_v1) {
+        /* V1 pins didn't find OLED, try V3 */
         if (bus0) {
             i2c_del_master_bus(bus0);
             bus0 = NULL;
         }
         bus0 = create_i2c_bus(V3_SDA, V3_SCL, I2C_NUM_0);
+        pa_pin = V3_PA;
         if (bus0) {
             i2c_scan(bus0, "V3 SDA=0 SCL=1");
-            if (i2c_master_probe(bus0, ES8311_ADDR, 200) == ESP_OK) {
-                bus_audio = bus0;
-                pa_pin = V3_PA;
-                printf("Detected V3 board\n");
-            }
+            printf("Detected V3 board\n");
         }
     } else {
         printf("Detected V1 board\n");
     }
 
+#ifdef CONFIG_RTCLAW_AUDIO_ENABLE
     /*
      * Initialize ES8311 BEFORE SSD1306.
      *
@@ -139,17 +138,18 @@ void board_early_init(void)
      * is created first, the two frameworks conflict on the same
      * bus, causing NACK errors on the codec address.
      */
-    if (bus_audio &&
-        i2c_master_probe(bus_audio, ES8311_ADDR, 200) == ESP_OK) {
-        if (es8311_audio_init(bus_audio, pa_pin) == 0) {
+    if (bus0 &&
+        i2c_master_probe(bus0, ES8311_ADDR, 200) == ESP_OK) {
+        if (es8311_audio_init(bus0, pa_pin) == 0) {
             s_audio_ready = 1;
             es8311_audio_play_sound("startup");
         }
     } else {
         printf("ES8311 not found, audio disabled\n");
     }
+#endif /* CONFIG_RTCLAW_AUDIO_ENABLE */
 
-    /* Initialize OLED after ES8311 */
+    /* Initialize OLED */
     if (bus0) {
         if (ssd1306_init_on_bus(bus0) == 0) {
             s_oled_ready = 1;
