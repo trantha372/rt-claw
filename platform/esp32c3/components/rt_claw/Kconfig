@@ -31,6 +31,13 @@ menu "rt-claw Configuration"
                 /commands for system. Disable to save RAM when
                 using only IM channels (e.g. Feishu).
 
+        config RTCLAW_AUDIO_ENABLE
+            bool "Enable audio (ES8311 codec + PA)"
+            default n
+            help
+                ES8311 audio codec and power amplifier.
+                Disable to skip audio init and save resources.
+
         config RTCLAW_LCD_ENABLE
             bool "Enable LCD display"
             default n
