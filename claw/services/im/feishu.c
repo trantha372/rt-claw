@@ -17,6 +17,7 @@
 #include "osal/claw_os.h"
 #include "claw_config.h"
 #include "claw/services/im/feishu.h"
+#include "claw/services/im/im_util.h"
 #include "claw/services/ai/ai_engine.h"
 #include "claw/tools/claw_tools.h"
 
@@ -568,24 +569,19 @@ static int send_reply(const char *chat_id, const char *text)
     int part = 1;
 
     while (remaining > 0) {
-        size_t chunk = remaining;
-        if (chunk > FEISHU_MAX_MSG_LEN) {
-            chunk = FEISHU_MAX_MSG_LEN;
-            /* Split at last newline to keep text clean */
-            for (size_t i = chunk; i > chunk / 2; i--) {
-                if (p[i] == '\n') {
-                    chunk = i + 1;
-                    break;
-                }
-            }
-        }
+        size_t chunk = im_find_chunk_end(p, remaining,
+                                         FEISHU_MAX_MSG_LEN);
 
-        /* Build chunk with null terminator */
-        char saved = p[chunk];
-        ((char *)p)[chunk] = '\0';
+        char *chunk_buf = claw_malloc(chunk + 1);
+        if (!chunk_buf) {
+            return CLAW_NOMEM;
+        }
+        memcpy(chunk_buf, p, chunk);
+        chunk_buf[chunk] = '\0';
+
         CLAW_LOGI(TAG, "send part %d (%d bytes)", part, (int)chunk);
-        int ret = send_one_card(chat_id, auth, p);
-        ((char *)p)[chunk] = saved;
+        int ret = send_one_card(chat_id, auth, chunk_buf);
+        claw_free(chunk_buf);
 
         if (ret != CLAW_OK) {
             return ret;
@@ -803,7 +799,8 @@ static void handle_message_event(cJSON *event)
     }
 
     cJSON *msg_type = cJSON_GetObjectItem(message, "message_type");
-    if (!msg_type || strcmp(msg_type->valuestring, "text") != 0) {
+    if (!msg_type || !cJSON_IsString(msg_type) ||
+        strcmp(msg_type->valuestring, "text") != 0) {
         CLAW_LOGD(TAG, "ignore non-text message");
         return;
     }

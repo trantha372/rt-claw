@@ -10,16 +10,6 @@
 
 #include <stddef.h>
 
-/* BSD socket API — platform-neutral includes */
-#ifdef CLAW_PLATFORM_ESP_IDF
-#include "lwip/sockets.h"
-#elif defined(CLAW_PLATFORM_RTTHREAD)
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif

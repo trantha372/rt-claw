@@ -18,6 +18,7 @@
 #include "osal/claw_os.h"
 #include "claw_config.h"
 #include "claw/services/im/telegram.h"
+#include "claw/services/im/im_util.h"
 #include "claw/services/ai/ai_engine.h"
 #include "claw/tools/claw_tools.h"
 
@@ -218,22 +219,19 @@ static int send_reply(const char *chat_id, const char *text)
     int part = 1;
 
     while (remaining > 0) {
-        size_t chunk = remaining;
-        if (chunk > TG_MAX_MSG_LEN) {
-            chunk = TG_MAX_MSG_LEN;
-            for (size_t i = chunk; i > chunk / 2; i--) {
-                if (p[i] == '\n') {
-                    chunk = i + 1;
-                    break;
-                }
-            }
-        }
+        size_t chunk = im_find_chunk_end(p, remaining,
+                                         TG_MAX_MSG_LEN);
 
-        char saved = p[chunk];
-        ((char *)p)[chunk] = '\0';
+        char *chunk_buf = claw_malloc(chunk + 1);
+        if (!chunk_buf) {
+            return CLAW_NOMEM;
+        }
+        memcpy(chunk_buf, p, chunk);
+        chunk_buf[chunk] = '\0';
+
         CLAW_LOGI(TAG, "send part %d (%d bytes)", part, (int)chunk);
-        int ret = send_one_message(chat_id, p);
-        ((char *)p)[chunk] = saved;
+        int ret = send_one_message(chat_id, chunk_buf);
+        claw_free(chunk_buf);
 
         if (ret != CLAW_OK) {
             return ret;
