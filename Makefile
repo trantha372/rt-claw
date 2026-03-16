@@ -369,36 +369,40 @@ test-unit:
 C3_DEFAULTS := platform/esp32c3/boards/qemu/sdkconfig.defaults
 S3_DEFAULTS := platform/esp32s3/boards/qemu/sdkconfig.defaults
 
+# Functional test runner macro: discover from tests/functional/, filter by pattern.
+# Usage: $(call _functest,<platform>,<pattern>)
+_functest = RTCLAW_TEST_PLATFORM=$(1) python3 -m unittest discover -s tests/functional -p '$(2)' -v
+
 # Helper: switch sdkconfig profile, rebuild, run tests, restore.
-# Usage: $(call _run_profile_test,<defaults-path>,<profile>,<build-target>,<flash-target>,<platform>,<test-filter>)
+# Usage: $(call _run_profile_test,<defaults-path>,<profile>,<build-target>,<flash-target>,<platform>,<pattern>)
 define _run_profile_test
 	@cp $(1) $(1).bak
 	@cp $(1).$(2) $(1)
 	@rm -rf $(BUILD_DIR)/$(5)/idf
 	@trap 'mv $(1).bak $(1)' EXIT; \
 	$(MAKE) $(3) && $(MAKE) $(4) && \
-	RTCLAW_TEST_PLATFORM=$(5) $(FUNCTEST) -k '$(6)'
+	$(call _functest,$(5),$(6))
 endef
 
 .PHONY: test-smoke-esp32c3
 test-smoke-esp32c3:
-	$(call _run_profile_test,$(C3_DEFAULTS),demo,build-esp32c3-qemu,run-esp32c3-qemu-flash,esp32c3-qemu,TestBoot or TestShell or TestKvPersistence)
+	$(call _run_profile_test,$(C3_DEFAULTS),demo,build-esp32c3-qemu,run-esp32c3-qemu-flash,esp32c3-qemu,test_[bsk]*.py)
 
 .PHONY: test-smoke-esp32s3
 test-smoke-esp32s3:
-	$(call _run_profile_test,$(S3_DEFAULTS),demo,build-esp32s3-qemu,run-esp32s3-qemu-flash,esp32s3-qemu,TestBoot or TestShell or TestKvPersistence)
+	$(call _run_profile_test,$(S3_DEFAULTS),demo,build-esp32s3-qemu,run-esp32s3-qemu-flash,esp32s3-qemu,test_[bsk]*.py)
 
 .PHONY: test-smoke-vexpress
 test-smoke-vexpress: vexpress-a9-qemu
-	RTCLAW_TEST_PLATFORM=vexpress-a9-qemu $(FUNCTEST) -k TestBoot
+	$(call _functest,vexpress-a9-qemu,test_boot.py)
 
 .PHONY: test-online-esp32c3
 test-online-esp32c3: run-esp32c3-qemu-flash
-	RTCLAW_TEST_PLATFORM=esp32c3-qemu $(FUNCTEST) -k TestAiOnline
+	$(call _functest,esp32c3-qemu,test_ai_online.py)
 
 .PHONY: test-online-esp32s3
 test-online-esp32s3: run-esp32s3-qemu-flash
-	RTCLAW_TEST_PLATFORM=esp32s3-qemu $(FUNCTEST) -k TestAiOnline
+	$(call _functest,esp32s3-qemu,test_ai_online.py)
 
 # --- Checks ---
 .PHONY: check
