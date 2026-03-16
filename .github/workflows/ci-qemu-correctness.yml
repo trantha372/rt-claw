@@ -9,7 +9,6 @@ on:
       - 'include/**'
       - 'drivers/**'
       - 'platform/esp32c3/**'
-      - 'platform/esp32s3/**'
       - 'platform/common/**'
       - 'platform/vexpress-a9/**'
       - 'scripts/**'
@@ -25,7 +24,6 @@ on:
       - 'include/**'
       - 'drivers/**'
       - 'platform/esp32c3/**'
-      - 'platform/esp32s3/**'
       - 'platform/common/**'
       - 'platform/vexpress-a9/**'
       - 'scripts/**'
@@ -56,11 +54,6 @@ jobs:
             qemu_tools: qemu-riscv32
             make_target: test-smoke-esp32c3
             timeout: 25
-          - target: esp32s3-qemu
-            esp_targets: esp32s3
-            qemu_tools: qemu-xtensa
-            make_target: test-smoke-esp32s3
-            timeout: 45
           - target: vexpress-a9-qemu
             esp_targets: ""
             qemu_tools: none
