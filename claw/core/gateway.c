@@ -38,6 +38,10 @@ int gateway_register_service(const char *name, uint8_t type_mask,
     return CLAW_OK;
 }
 
+/* --- Statistics --- */
+
+static struct gateway_stats s_stats;
+
 /* --- Message dispatch --- */
 
 static void dispatch_msg(struct gateway_msg *msg)
@@ -45,12 +49,18 @@ static void dispatch_msg(struct gateway_msg *msg)
     uint8_t bit = (uint8_t)(1 << msg->type);
     int delivered = 0;
 
+    s_stats.total++;
+    if (msg->type < GW_MSG_TYPE_MAX) {
+        s_stats.per_type[msg->type]++;
+    }
+
     for (int i = 0; i < s_service_count; i++) {
         if (s_services[i].type_mask & bit) {
             if (claw_mq_send(s_services[i].inbox, msg, sizeof(*msg),
                              CLAW_NO_WAIT) == CLAW_OK) {
                 delivered++;
             } else {
+                s_stats.dropped++;
                 CLAW_LOGW(TAG, "drop msg type=%d -> %s (queue full)",
                           msg->type, s_services[i].name);
             }
@@ -58,6 +68,7 @@ static void dispatch_msg(struct gateway_msg *msg)
     }
 
     if (delivered == 0) {
+        s_stats.no_consumer++;
         CLAW_LOGD(TAG, "msg type=%d len=%d (no consumer)", msg->type,
                   msg->len);
     }
@@ -85,6 +96,7 @@ static void gateway_thread_entry(void *param)
 int gateway_init(void)
 {
     memset(s_services, 0, sizeof(s_services));
+    memset(&s_stats, 0, sizeof(s_stats));
     s_service_count = 0;
 
     gw_mq = claw_mq_create("gw_mq", sizeof(struct gateway_msg),
@@ -113,4 +125,11 @@ int gateway_init(void)
 int gateway_send(struct gateway_msg *msg)
 {
     return claw_mq_send(gw_mq, msg, sizeof(*msg), CLAW_NO_WAIT);
+}
+
+void gateway_get_stats(struct gateway_stats *out)
+{
+    if (out) {
+        memcpy(out, &s_stats, sizeof(s_stats));
+    }
 }

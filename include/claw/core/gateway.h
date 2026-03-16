@@ -49,8 +49,17 @@ struct gw_service_entry {
     claw_mq_t inbox;            /* service's own message queue */
 };
 
+/* Message statistics */
+struct gateway_stats {
+    uint32_t total;                         /* total dispatched */
+    uint32_t per_type[GW_MSG_TYPE_MAX];     /* per message type */
+    uint32_t dropped;                       /* queue-full drops */
+    uint32_t no_consumer;                   /* msgs with no match */
+};
+
 int gateway_init(void);
 int gateway_send(struct gateway_msg *msg);
+void gateway_get_stats(struct gateway_stats *out);
 
 /**
  * Register a service to receive messages matching type_mask.
