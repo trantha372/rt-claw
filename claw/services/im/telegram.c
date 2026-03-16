@@ -229,11 +229,17 @@ static int send_reply(const char *chat_id, const char *text)
             }
         }
 
-        char saved = p[chunk];
-        ((char *)p)[chunk] = '\0';
+        /* Copy chunk to heap buffer for null-terminated send */
+        char *chunk_buf = claw_malloc(chunk + 1);
+        if (!chunk_buf) {
+            return CLAW_NOMEM;
+        }
+        memcpy(chunk_buf, p, chunk);
+        chunk_buf[chunk] = '\0';
+
         CLAW_LOGI(TAG, "send part %d (%d bytes)", part, (int)chunk);
-        int ret = send_one_message(chat_id, p);
-        ((char *)p)[chunk] = saved;
+        int ret = send_one_message(chat_id, chunk_buf);
+        claw_free(chunk_buf);
 
         if (ret != CLAW_OK) {
             return ret;

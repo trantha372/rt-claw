@@ -580,12 +580,17 @@ static int send_reply(const char *chat_id, const char *text)
             }
         }
 
-        /* Build chunk with null terminator */
-        char saved = p[chunk];
-        ((char *)p)[chunk] = '\0';
+        /* Copy chunk to heap buffer for null-terminated send */
+        char *chunk_buf = claw_malloc(chunk + 1);
+        if (!chunk_buf) {
+            return CLAW_NOMEM;
+        }
+        memcpy(chunk_buf, p, chunk);
+        chunk_buf[chunk] = '\0';
+
         CLAW_LOGI(TAG, "send part %d (%d bytes)", part, (int)chunk);
-        int ret = send_one_card(chat_id, auth, p);
-        ((char *)p)[chunk] = saved;
+        int ret = send_one_card(chat_id, auth, chunk_buf);
+        claw_free(chunk_buf);
 
         if (ret != CLAW_OK) {
             return ret;
@@ -803,7 +808,8 @@ static void handle_message_event(cJSON *event)
     }
 
     cJSON *msg_type = cJSON_GetObjectItem(message, "message_type");
-    if (!msg_type || strcmp(msg_type->valuestring, "text") != 0) {
+    if (!msg_type || !cJSON_IsString(msg_type) ||
+        strcmp(msg_type->valuestring, "text") != 0) {
         CLAW_LOGD(TAG, "ignore non-text message");
         return;
     }
