@@ -17,6 +17,16 @@
 #include <string.h>
 #include <stdio.h>
 
+/* BSD socket API — included directly, not via claw_net.h */
+#ifdef CLAW_PLATFORM_ESP_IDF
+#include "lwip/sockets.h"
+#elif defined(CLAW_PLATFORM_RTTHREAD)
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#endif
+
 #define TAG "swarm"
 
 static struct swarm_node nodes[CLAW_SWARM_MAX_NODES];
