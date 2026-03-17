@@ -8,6 +8,9 @@
 
 #include "framework/test.h"
 #include "osal/claw_os.h"
+
+#ifdef CONFIG_RTCLAW_OTA_ENABLE
+
 #include "claw_ota.h"
 #include "claw/services/ota/ota_service.h"
 #include "claw/tools/claw_tools.h"
@@ -225,3 +228,13 @@ int test_ota_suite(void)
 
     TEST_END();
 }
+
+#else /* !CONFIG_RTCLAW_OTA_ENABLE */
+
+int test_ota_suite(void)
+{
+    printf("=== test_ota (skipped — OTA disabled) ===\n");
+    return 0;
+}
+
+#endif /* CONFIG_RTCLAW_OTA_ENABLE */

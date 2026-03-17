@@ -12,9 +12,11 @@ unit_test_src = files(
 test_defs = platform_defs
 
 if get_option('ota')
-    unit_test_src += files('test_ota.c')
     test_defs += '-DCONFIG_RTCLAW_OTA_ENABLE'
 endif
+
+# OTA test always compiled; guarded by #ifdef inside the file.
+unit_test_src += files('test_ota.c')
 
 unittest_lib = static_library('unittest',
     unit_test_src,

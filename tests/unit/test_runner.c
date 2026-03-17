@@ -12,9 +12,7 @@ extern int test_ai_memory_suite(void);
 extern int test_gateway_suite(void);
 extern int test_tools_suite(void);
 extern int test_im_util_suite(void);
-#ifdef CONFIG_RTCLAW_OTA_ENABLE
 extern int test_ota_suite(void);
-#endif
 
 int run_all_unit_tests(void)
 {
@@ -26,9 +24,7 @@ int run_all_unit_tests(void)
     failed += test_gateway_suite();
     failed += test_tools_suite();
     failed += test_im_util_suite();
-#ifdef CONFIG_RTCLAW_OTA_ENABLE
     failed += test_ota_suite();
-#endif
 
     printf("\n========================================\n");
     if (failed) {
