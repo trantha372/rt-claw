@@ -99,6 +99,32 @@ run-vexpress-a9-qemu: vexpress-a9-qemu
 		-nic user,model=lan9118 \
 		$(if $(filter 1,$(GDB)),-S -s)
 
+# --- Zynq-A9 QEMU (FreeRTOS) ---
+MESON_BUILDDIR_ZYNQ := $(BUILD_DIR)/zynq-a9-qemu
+CROSS_FILE_ZYNQ     := platform/zynq-a9/cross.ini
+
+.PHONY: build-zynq-a9-qemu
+build-zynq-a9-qemu:
+	@if [ ! -f $(MESON_BUILDDIR_ZYNQ)/build.ninja ]; then \
+		meson setup $(MESON_BUILDDIR_ZYNQ) --cross-file $(CROSS_FILE_ZYNQ); \
+	fi
+	meson compile -C $(MESON_BUILDDIR_ZYNQ)
+	@echo "Output: $(MESON_BUILDDIR_ZYNQ)/platform/zynq-a9/rtclaw.elf"
+
+.PHONY: run-zynq-a9-qemu
+run-zynq-a9-qemu: build-zynq-a9-qemu
+	@if [ "$(GDB)" = "1" ]; then \
+		echo "Starting QEMU in debug mode (GDB port 1234)..."; \
+		echo "Connect: arm-none-eabi-gdb $(MESON_BUILDDIR_ZYNQ)/platform/zynq-a9/rtclaw.elf -ex 'target remote :1234'"; \
+	fi
+	qemu-system-arm \
+		-M xilinx-zynq-a9 \
+		-smp 1 \
+		-nographic \
+		-kernel $(MESON_BUILDDIR_ZYNQ)/platform/zynq-a9/rtclaw.elf \
+		-nic user,model=cadence_gem \
+		$(if $(filter 1,$(GDB)),-S -s)
+
 # --- ESP32-C3 unified targets ---
 # Prerequisite: source $$HOME/esp/esp-idf/export.sh
 #
