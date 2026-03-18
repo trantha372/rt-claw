@@ -33,13 +33,14 @@ SECTIONS
         *(.boot)
     } > DDR
 
-    .freertos_vectors : {
+    /* 32-byte aligned for ARM VBAR requirement */
+    .freertos_vectors : ALIGN(32) {
         KEEP(*(.freertos_vectors))
         KEEP(*(.vectors))
     } > DDR
 
     /* Executable code */
-    .text : {
+    .text : ALIGN(4) {
         *(.text)
         *(.text.*)
         *(.gnu.linkonce.t.*)
