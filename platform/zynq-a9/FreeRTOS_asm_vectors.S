@@ -78,7 +78,7 @@
 .extern FreeRTOS_IRQ_Handler
 .extern FreeRTOS_SWI_Handler
 
-.section .freertos_vectors
+.section .freertos_vectors, "ax"
 _freertos_vector_table:
 	B	  _boot
 	B	  FreeRTOS_Undefined

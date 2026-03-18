@@ -39,6 +39,14 @@ _reset:
     /* Disable interrupts */
     cpsid   if
 
+    /* Enable VFP/NEON (CP10 + CP11 full access) */
+    mrc p15, 0, r0, c1, c0, 2
+    orr r0, r0, #(0xF << 20)
+    mcr p15, 0, r0, c1, c0, 2
+    isb
+    mov r0, #(1 << 30)          /* FPEXC.EN */
+    vmsr fpexc, r0
+
     /* Set VBAR to FreeRTOS vector table */
     ldr r0, =_freertos_vector_table
     mcr p15, 0, r0, c12, c0, 0
@@ -64,9 +72,9 @@ _reset:
     cps #0x1b
     ldr sp, =__undef_stack
 
-    /* Switch to System mode (shared with User) */
-    cps #0x1f
-    ldr sp, =__stack
+    /* Switch to Supervisor mode — FreeRTOS ARM_CA9 port
+     * expects to start the scheduler from SVC mode. */
+    cps #0x13
 
     /* Clear BSS */
     ldr r0, =__bss_start
