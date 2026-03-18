@@ -15,7 +15,7 @@
 #define ipconfigDNS_USE_CALLBACKS               0
 
 /* Network buffers */
-#define ipconfigNUM_NETWORK_BUFFER_DESCRIPTORS  32
+#define ipconfigNUM_NETWORK_BUFFER_DESCRIPTORS  60
 #define ipconfigNETWORK_MTU                     1500
 #define ipconfigUSE_LINKED_RX_MESSAGES          1
 
