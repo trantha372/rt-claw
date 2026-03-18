@@ -56,6 +56,15 @@ void claw_thread_delete(claw_thread_t thread);
 void claw_thread_delay_ms(uint32_t ms);
 void claw_thread_yield(void);
 
+/*
+ * Check if the current thread has been requested to exit.
+ * Long-running threads should poll this in their main loop
+ * to support cooperative cancellation via claw_thread_delete().
+ * Returns non-zero if exit requested, 0 otherwise.
+ * On platforms without cooperative cancellation, always returns 0.
+ */
+int  claw_thread_should_exit(void);
+
 /* ---------------- Mutex --------------------------------- */
 
 claw_mutex_t claw_mutex_create(const char *name);

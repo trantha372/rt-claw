@@ -31,7 +31,7 @@ static void sched_thread(void *arg)
 {
     (void)arg;
 
-    while (1) {
+    while (!claw_thread_should_exit()) {
         claw_thread_delay_ms(CLAW_SCHED_TICK_MS);
         uint32_t now = claw_tick_ms();
 

@@ -28,17 +28,19 @@
 
 #define TAG "feishu"
 
-#ifdef CLAW_PLATFORM_ESP_IDF
-
-#include "sdkconfig.h"
-
 #ifdef CONFIG_RTCLAW_FEISHU_ENABLE
 
-#include "esp_http_client.h"
-#include "esp_crt_bundle.h"
-#include "esp_websocket_client.h"
-#include "esp_system.h"
+#include "osal/claw_net.h"
 #include "cJSON.h"
+
+#ifdef CLAW_PLATFORM_ESP_IDF
+#include "esp_websocket_client.h"
+#include "esp_crt_bundle.h"
+#include "esp_system.h"
+#elif defined(CLAW_PLATFORM_LINUX)
+#include <curl/curl.h>
+#include <curl/websockets.h>
+#endif
 
 #define FEISHU_CRED_MAX     128
 
@@ -66,8 +68,11 @@ static char s_app_secret[FEISHU_CRED_MAX];
 
 static char s_token[TOKEN_BUF_SIZE];
 static claw_mutex_t s_lock;
+#ifdef CLAW_PLATFORM_ESP_IDF
 static esp_websocket_client_handle_t s_ws_client;
-/* Accessed from both WS callback and worker thread */
+#elif defined(CLAW_PLATFORM_LINUX)
+static CURL *s_ws_curl;
+#endif
 static volatile int s_ws_connected;
 
 /* Event dedup ring buffer — drop events already processed */
@@ -397,57 +402,33 @@ static int build_ack_frame(uint8_t *buf, int cap,
 }
 
 /* ------------------------------------------------------------------ */
-/*  HTTP helpers                                                       */
+/*  HTTP helper (platform-independent via OSAL)                        */
 /* ------------------------------------------------------------------ */
 
-static esp_err_t on_http_event(esp_http_client_event_t *evt)
+static int http_post_json(const char *url,
+                          const char *auth_header,
+                          const char *body,
+                          char *resp, size_t resp_size)
 {
-    struct http_ctx *ctx = evt->user_data;
-
-    if (evt->event_id == HTTP_EVENT_ON_DATA && ctx) {
-        if (ctx->len + evt->data_len < ctx->cap) {
-            memcpy(ctx->buf + ctx->len, evt->data, evt->data_len);
-            ctx->len += evt->data_len;
-            ctx->buf[ctx->len] = '\0';
-        }
-    }
-    return ESP_OK;
-}
-
-static int http_post_json(const char *url, const char *auth_header,
-                          const char *body, char *resp, size_t resp_size)
-{
-    struct http_ctx ctx = { .buf = resp, .len = 0, .cap = resp_size };
-
-    esp_http_client_config_t cfg = {
-        .url = url,
-        .method = HTTP_METHOD_POST,
-        .timeout_ms = HTTP_TIMEOUT_MS,
-        .event_handler = on_http_event,
-        .user_data = &ctx,
-        .crt_bundle_attach = esp_crt_bundle_attach,
-        .buffer_size = 2048,
-        .buffer_size_tx = 2048,
-    };
-
-    esp_http_client_handle_t client = esp_http_client_init(&cfg);
-    if (!client) {
-        return CLAW_ERROR;
-    }
-
-    esp_http_client_set_header(client, "Content-Type", "application/json");
+    claw_net_header_t hdrs[2];
+    int hdr_count = 0;
+    hdrs[hdr_count].key = "Content-Type";
+    hdrs[hdr_count].value = "application/json";
+    hdr_count++;
     if (auth_header) {
-        esp_http_client_set_header(client, "Authorization", auth_header);
+        hdrs[hdr_count].key = "Authorization";
+        hdrs[hdr_count].value = auth_header;
+        hdr_count++;
     }
-    esp_http_client_set_post_field(client, body, strlen(body));
 
-    esp_err_t err = esp_http_client_perform(client);
-    int status = esp_http_client_get_status_code(client);
-    esp_http_client_cleanup(client);
+    size_t resp_len = 0;
+    int status = claw_net_post(url, hdrs, hdr_count,
+                               body, strlen(body),
+                               resp, resp_size, &resp_len);
 
-    if (err != ESP_OK || status < 200 || status >= 300) {
-        CLAW_LOGE(TAG, "HTTP POST %s failed: err=%d status=%d",
-                  url, err, status);
+    if (status < 200 || status >= 300) {
+        CLAW_LOGE(TAG, "HTTP POST %s: status=%d",
+                  url, status);
         return CLAW_ERROR;
     }
     return CLAW_OK;
@@ -679,9 +660,9 @@ static void outbound_thread(void *arg)
     (void)arg;
     feishu_outbound_t msg;
 
-    while (1) {
+    while (!claw_thread_should_exit()) {
         if (claw_mq_recv(s_outbound_q, &msg, sizeof(msg),
-                         CLAW_WAIT_FOREVER) != CLAW_OK) {
+                         1000) != CLAW_OK) {
             continue;
         }
         if (!msg.text) {
@@ -694,7 +675,7 @@ static void outbound_thread(void *arg)
         send_reply(msg.chat_id, msg.text);
         CLAW_LOGI(TAG, "[%lu ms] >>> sent (heap=%u)",
                   (unsigned long)claw_tick_ms(),
-                  (unsigned)esp_get_free_heap_size());
+                  (unsigned)claw_tick_ms());
         claw_free(msg.text);
     }
 }
@@ -736,9 +717,9 @@ static void ai_worker_thread(void *arg)
 
     feishu_inbound_t in;
 
-    while (1) {
+    while (!claw_thread_should_exit()) {
         if (claw_mq_recv(s_inbound_q, &in, sizeof(in),
-                         CLAW_WAIT_FOREVER) != CLAW_OK) {
+                         1000) != CLAW_OK) {
             continue;
         }
 
@@ -784,11 +765,11 @@ static void ai_worker_thread(void *arg)
 
         CLAW_LOGI(TAG, "[%lu ms] ai_chat: \"%s\" (heap=%u)",
                   (unsigned long)claw_tick_ms(), in.text,
-                  (unsigned)esp_get_free_heap_size());
+                  (unsigned)claw_tick_ms());
         int ret = ai_chat(in.text, reply, REPLY_BUF_SIZE);
         CLAW_LOGI(TAG, "[%lu ms] ai_chat ret=%d (heap=%u)",
                   (unsigned long)claw_tick_ms(), ret,
-                  (unsigned)esp_get_free_heap_size());
+                  (unsigned)claw_tick_ms());
 
         ai_set_channel(AI_CHANNEL_SHELL);
         ai_set_channel_hint(NULL);
@@ -942,8 +923,69 @@ static void process_event_payload(const uint8_t *data, int len)
 }
 
 /* ------------------------------------------------------------------ */
-/*  WebSocket event handler                                            */
+/*  WebSocket send helper                                              */
 /* ------------------------------------------------------------------ */
+
+static int ws_send_bin(const uint8_t *data, int len)
+{
+    if (len <= 0) {
+        return CLAW_ERROR;
+    }
+#ifdef CLAW_PLATFORM_ESP_IDF
+    if (s_ws_client) {
+        esp_websocket_client_send_bin(
+            s_ws_client, (const char *)data, len,
+            portMAX_DELAY);
+    }
+#elif defined(CLAW_PLATFORM_LINUX)
+    if (s_ws_curl) {
+        size_t sent = 0;
+        curl_ws_send(s_ws_curl, data, (size_t)len,
+                     &sent, 0, CURLWS_BINARY);
+    }
+#endif
+    return CLAW_OK;
+}
+
+/* Handle a received WebSocket frame (called from event/poll) */
+static void ws_handle_frame(const uint8_t *data, size_t len,
+                            int is_binary)
+{
+    if (is_binary && len > 0) {
+        struct feishu_frame f;
+        if (parse_frame(data, len, &f) == 0) {
+            if (f.type && f.type_len == 4 &&
+                memcmp(f.type, "ping", 4) == 0) {
+                uint8_t pong[64];
+                int plen = build_pong_frame(pong,
+                                            sizeof(pong));
+                ws_send_bin(pong, plen);
+                CLAW_LOGD(TAG, "ping/pong");
+            } else if (f.method == 1 && f.payload &&
+                       f.payload_len > 0) {
+                CLAW_LOGI(TAG, "ws DATA frame, "
+                    "payload_len=%d", f.payload_len);
+                if (f.msg_id && f.msg_id_len > 0) {
+                    uint8_t ack[128];
+                    int alen = build_ack_frame(
+                        ack, sizeof(ack),
+                        f.msg_id, f.msg_id_len);
+                    ws_send_bin(ack, alen);
+                }
+                process_event_payload(f.payload,
+                                      f.payload_len);
+            }
+        }
+    } else if (!is_binary && len > 0) {
+        process_event_payload(data, len);
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/*  WebSocket event handler (platform-specific)                        */
+/* ------------------------------------------------------------------ */
+
+#ifdef CLAW_PLATFORM_ESP_IDF
 
 static void ws_event_handler(void *arg, esp_event_base_t base,
                              int32_t event_id, void *event_data)
@@ -957,70 +999,25 @@ static void ws_event_handler(void *arg, esp_event_base_t base,
         CLAW_LOGI(TAG, "ws connected");
         s_ws_connected = 1;
         break;
-
     case WEBSOCKET_EVENT_DISCONNECTED:
         CLAW_LOGW(TAG, "ws disconnected");
         s_ws_connected = 0;
         break;
-
     case WEBSOCKET_EVENT_DATA:
-        if (ws->op_code == 0x02 && ws->data_len > 0) {
-            /* Binary frame — Protobuf encoded */
-            struct feishu_frame f;
-            if (parse_frame((const uint8_t *)ws->data_ptr,
-                            ws->data_len, &f) == 0) {
-                if (f.type && f.type_len == 4 &&
-                    memcmp(f.type, "ping", 4) == 0) {
-                    /* Respond with pong */
-                    uint8_t pong[64];
-                    int plen = build_pong_frame(pong, sizeof(pong));
-                    if (plen > 0 && s_ws_client) {
-                        esp_websocket_client_send_bin(
-                            s_ws_client, (const char *)pong, plen,
-                            portMAX_DELAY);
-                    }
-                    CLAW_LOGD(TAG, "ping/pong");
-                } else if (f.method == 1 && f.payload && f.payload_len > 0) {
-                    /* DATA frame — payload is JSON event */
-                    CLAW_LOGI(TAG, "[%lu ms] ws DATA frame, "
-                              "msg_id_len=%d, payload_len=%d",
-                              (unsigned long)claw_tick_ms(),
-                              f.msg_id_len, f.payload_len);
-
-                    /* ACK immediately so Feishu won't re-deliver */
-                    if (f.msg_id && f.msg_id_len > 0) {
-                        uint8_t ack[128];
-                        int alen = build_ack_frame(ack, sizeof(ack),
-                                                   f.msg_id,
-                                                   f.msg_id_len);
-                        if (alen > 0 && s_ws_client) {
-                            esp_websocket_client_send_bin(
-                                s_ws_client, (const char *)ack,
-                                alen, portMAX_DELAY);
-                            CLAW_LOGI(TAG, "[%lu ms] sent ACK",
-                                      (unsigned long)claw_tick_ms());
-                        }
-                    }
-
-                    process_event_payload(f.payload, f.payload_len);
-                }
-            }
-        } else if (ws->op_code == 0x01 && ws->data_len > 0) {
-            /* Text frame fallback — try as JSON directly */
-            process_event_payload((const uint8_t *)ws->data_ptr,
-                                  ws->data_len);
-        }
+        ws_handle_frame((const uint8_t *)ws->data_ptr,
+                        ws->data_len,
+                        ws->op_code == 0x02);
         break;
-
     case WEBSOCKET_EVENT_ERROR:
         CLAW_LOGE(TAG, "ws error");
         s_ws_connected = 0;
         break;
-
     default:
         break;
     }
 }
+
+#endif /* CLAW_PLATFORM_ESP_IDF */
 
 /* ------------------------------------------------------------------ */
 /*  Fetch WebSocket endpoint and connect                               */
@@ -1033,20 +1030,18 @@ static int connect_ws(void)
         return CLAW_NOMEM;
     }
 
-    /* Authenticate directly with AppID + AppSecret in body */
     char body[256];
     snprintf(body, sizeof(body),
              "{\"AppID\":\"%s\",\"AppSecret\":\"%s\"}",
              s_app_id, s_app_secret);
 
-    int ret = http_post_json(WS_EP_URL, NULL, body, resp, RESP_BUF_SIZE);
+    int ret = http_post_json(WS_EP_URL, NULL, body,
+                             resp, RESP_BUF_SIZE);
     if (ret != CLAW_OK) {
         CLAW_LOGE(TAG, "ws endpoint request failed");
         claw_free(resp);
         return ret;
     }
-
-    CLAW_LOGI(TAG, "ws endpoint resp: %.200s", resp);
 
     cJSON *root = cJSON_Parse(resp);
     claw_free(resp);
@@ -1055,28 +1050,30 @@ static int connect_ws(void)
         return CLAW_ERROR;
     }
 
-    /* Check error code */
     cJSON *code = cJSON_GetObjectItem(root, "code");
-    if (code && cJSON_IsNumber(code) && code->valueint != 0) {
+    if (code && cJSON_IsNumber(code) &&
+        code->valueint != 0) {
         cJSON *msg = cJSON_GetObjectItem(root, "msg");
-        CLAW_LOGE(TAG, "ws endpoint error: code=%d msg=%s",
+        CLAW_LOGE(TAG, "ws endpoint error: %d %s",
                   code->valueint,
-                  (msg && cJSON_IsString(msg)) ? msg->valuestring : "?");
+                  (msg && cJSON_IsString(msg))
+                      ? msg->valuestring : "?");
         cJSON_Delete(root);
         return CLAW_ERROR;
     }
 
-    /* Extract WSS URL: { "data": { "URL": "wss://..." } } */
     cJSON *data_obj = cJSON_GetObjectItem(root, "data");
-    cJSON *url_obj = data_obj ? cJSON_GetObjectItem(data_obj, "URL") : NULL;
+    cJSON *url_obj = data_obj
+        ? cJSON_GetObjectItem(data_obj, "URL") : NULL;
     if (!url_obj || !cJSON_IsString(url_obj)) {
-        CLAW_LOGE(TAG, "ws endpoint missing URL field");
+        CLAW_LOGE(TAG, "ws endpoint missing URL");
         cJSON_Delete(root);
         return CLAW_ERROR;
     }
 
     CLAW_LOGI(TAG, "ws url: %s", url_obj->valuestring);
 
+#ifdef CLAW_PLATFORM_ESP_IDF
     esp_websocket_client_config_t ws_cfg = {
         .uri = url_obj->valuestring,
         .buffer_size = 4096,
@@ -1092,8 +1089,8 @@ static int connect_ws(void)
         return CLAW_ERROR;
     }
 
-    esp_websocket_register_events(s_ws_client, WEBSOCKET_EVENT_ANY,
-                                  ws_event_handler, NULL);
+    esp_websocket_register_events(s_ws_client,
+        WEBSOCKET_EVENT_ANY, ws_event_handler, NULL);
     esp_err_t err = esp_websocket_client_start(s_ws_client);
     if (err != ESP_OK) {
         CLAW_LOGE(TAG, "ws start failed: %d", err);
@@ -1101,6 +1098,29 @@ static int connect_ws(void)
         s_ws_client = NULL;
         return CLAW_ERROR;
     }
+#elif defined(CLAW_PLATFORM_LINUX)
+    s_ws_curl = curl_easy_init();
+    if (!s_ws_curl) {
+        cJSON_Delete(root);
+        return CLAW_ERROR;
+    }
+    curl_easy_setopt(s_ws_curl, CURLOPT_URL,
+                     url_obj->valuestring);
+    curl_easy_setopt(s_ws_curl, CURLOPT_CONNECT_ONLY, 2L);
+    CURLcode res = curl_easy_perform(s_ws_curl);
+    cJSON_Delete(root);
+    if (res != CURLE_OK) {
+        CLAW_LOGE(TAG, "ws connect failed: %s",
+                  curl_easy_strerror(res));
+        curl_easy_cleanup(s_ws_curl);
+        s_ws_curl = NULL;
+        return CLAW_ERROR;
+    }
+    s_ws_connected = 1;
+#else
+    cJSON_Delete(root);
+    return CLAW_ERROR;
+#endif
 
     return CLAW_OK;
 }
@@ -1141,8 +1161,29 @@ static void feishu_thread(void *arg)
     /* Keep-alive loop */
     uint32_t last_refresh = claw_tick_ms();
 
-    for (;;) {
+    while (!claw_thread_should_exit()) {
+#ifdef CLAW_PLATFORM_LINUX
+        /* Linux: poll WebSocket for incoming frames */
+        if (s_ws_curl && s_ws_connected) {
+            const struct curl_ws_frame *meta = NULL;
+            uint8_t buf[4096];
+            size_t nread = 0;
+            CURLcode rc = curl_ws_recv(s_ws_curl, buf,
+                sizeof(buf), &nread, &meta);
+            if (rc == CURLE_OK && nread > 0 && meta) {
+                int binary = (meta->flags & CURLWS_BINARY);
+                ws_handle_frame(buf, nread, binary);
+            } else if (rc == CURLE_AGAIN) {
+                claw_thread_delay_ms(100);
+            } else if (rc != CURLE_OK) {
+                s_ws_connected = 0;
+            }
+        } else {
+            claw_thread_delay_ms(1000);
+        }
+#else
         claw_thread_delay_ms(5000);
+#endif
 
         /* Periodic token refresh */
         if (claw_tick_ms() - last_refresh >= TOKEN_REFRESH_MS) {
@@ -1151,10 +1192,19 @@ static void feishu_thread(void *arg)
         }
 
         /* Reconnect on disconnect */
-        if (!s_ws_connected && s_ws_client) {
+        if (!s_ws_connected) {
             CLAW_LOGW(TAG, "ws lost, reconnecting...");
-            esp_websocket_client_destroy(s_ws_client);
-            s_ws_client = NULL;
+#ifdef CLAW_PLATFORM_ESP_IDF
+            if (s_ws_client) {
+                esp_websocket_client_destroy(s_ws_client);
+                s_ws_client = NULL;
+            }
+#elif defined(CLAW_PLATFORM_LINUX)
+            if (s_ws_curl) {
+                curl_easy_cleanup(s_ws_curl);
+                s_ws_curl = NULL;
+            }
+#endif
             claw_thread_delay_ms(WS_RECONNECT_MS);
             connect_ws();
         }
@@ -1211,7 +1261,11 @@ int feishu_init(void)
     }
 
     s_token[0] = '\0';
+#ifdef CLAW_PLATFORM_ESP_IDF
     s_ws_client = NULL;
+#elif defined(CLAW_PLATFORM_LINUX)
+    s_ws_curl = NULL;
+#endif
     s_ws_connected = 0;
     CLAW_LOGI(TAG, "init ok");
     return CLAW_OK;
@@ -1255,14 +1309,3 @@ const char *feishu_get_app_id(void)        { return ""; }
 const char *feishu_get_app_secret(void)    { return ""; }
 
 #endif /* CONFIG_RTCLAW_FEISHU_ENABLE */
-
-#else /* !CLAW_PLATFORM_ESP_IDF */
-
-int  feishu_init(void)  { return 0; }
-int  feishu_start(void) { return 0; }
-void feishu_set_app_id(const char *id)     { (void)id; }
-void feishu_set_app_secret(const char *s)  { (void)s; }
-const char *feishu_get_app_id(void)        { return ""; }
-const char *feishu_get_app_secret(void)    { return ""; }
-
-#endif /* CLAW_PLATFORM_ESP_IDF */

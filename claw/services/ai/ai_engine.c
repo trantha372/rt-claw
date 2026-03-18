@@ -911,9 +911,9 @@ static void ai_worker_thread(void *arg)
 
     CLAW_LOGI(TAG, "worker started");
 
-    while (1) {
+    while (!claw_thread_should_exit()) {
         if (claw_mq_recv(s_ai_queue, &req, sizeof(req),
-                          CLAW_WAIT_FOREVER) != CLAW_OK) {
+                          1000) != CLAW_OK) {
             continue;
         }
 

@@ -40,11 +40,23 @@ typedef struct {
     atomic_bool     exit_flag;
 } linux_thread_t;
 
+static _Thread_local linux_thread_t *s_tls_self;
+
 static void *thread_wrapper(void *param)
 {
     linux_thread_t *t = (linux_thread_t *)param;
+    s_tls_self = t;
     t->entry(t->arg);
     return NULL;
+}
+
+int claw_thread_should_exit(void)
+{
+    linux_thread_t *t = s_tls_self;
+    if (t) {
+        return atomic_load(&t->exit_flag) ? 1 : 0;
+    }
+    return 0;
 }
 
 claw_thread_t claw_thread_create(const char *name,

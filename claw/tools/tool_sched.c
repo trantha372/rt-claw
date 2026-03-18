@@ -17,11 +17,10 @@
 #include <string.h>
 #include <stdio.h>
 
-#ifdef CLAW_PLATFORM_ESP_IDF
+#ifndef CLAW_SCHED_TOOL_STUB
 
 #include "cJSON.h"
-#include "nvs_flash.h"
-#include "nvs.h"
+#include "osal/claw_kv.h"
 
 #define TAG              "tool_sched"
 #define SCHED_AI_MAX     4
@@ -151,8 +150,10 @@ static void ai_worker_thread(void *arg)
 {
     (void)arg;
 
-    while (1) {
-        claw_sem_take(s_worker_sem, CLAW_WAIT_FOREVER);
+    while (!claw_thread_should_exit()) {
+        if (claw_sem_take(s_worker_sem, 1000) != CLAW_OK) {
+            continue;
+        }
 
         claw_mutex_lock(s_worker_lock, CLAW_WAIT_FOREVER);
         sched_ai_ctx_t *ctx = s_pending_ctx;
@@ -289,18 +290,10 @@ static void sched_ai_callback(void *arg)
     claw_sem_give(s_worker_sem);
 }
 
-/* --- NVS persistence for AI-created scheduled tasks --- */
+/* --- KV persistence for AI-created scheduled tasks --- */
 
 static int sched_nvs_save(void)
 {
-    nvs_handle_t h;
-    esp_err_t err = nvs_open(SCHED_NVS_NS, NVS_READWRITE, &h);
-    if (err != ESP_OK) {
-        CLAW_LOGE(TAG, "nvs_open failed: %s", esp_err_to_name(err));
-        return CLAW_ERROR;
-    }
-
-    /* Count active contexts */
     uint8_t cnt = 0;
     for (int i = 0; i < SCHED_AI_MAX; i++) {
         if (s_ctx[i].in_use) {
@@ -308,7 +301,7 @@ static int sched_nvs_save(void)
         }
     }
 
-    nvs_set_u8(h, "cnt", cnt);
+    claw_kv_set_u8(SCHED_NVS_NS, "cnt", cnt);
 
     int idx = 0;
     for (int i = 0; i < SCHED_AI_MAX; i++) {
@@ -317,7 +310,8 @@ static int sched_nvs_save(void)
         }
         sched_persist_t rec;
         memset(&rec, 0, sizeof(rec));
-        snprintf(rec.name, sizeof(rec.name), "%s", s_ctx[i].name);
+        snprintf(rec.name, sizeof(rec.name), "%s",
+                 s_ctx[i].name);
         if (s_ctx[i].prompt) {
             snprintf(rec.prompt, sizeof(rec.prompt), "%s",
                      s_ctx[i].prompt);
@@ -326,36 +320,29 @@ static int sched_nvs_save(void)
         }
         rec.interval_s = s_ctx[i].interval_s;
         rec.count = s_ctx[i].count;
-        snprintf(rec.reply_target, sizeof(rec.reply_target),
+        snprintf(rec.reply_target,
+                 sizeof(rec.reply_target),
                  "%s", s_ctx[i].reply_target);
 
         char key[8];
         snprintf(key, sizeof(key), "t%d", idx);
-        nvs_set_blob(h, key, &rec, sizeof(rec));
+        claw_kv_set_blob(SCHED_NVS_NS, key,
+                         &rec, sizeof(rec));
         idx++;
     }
 
-    err = nvs_commit(h);
-    nvs_close(h);
-    return (err == ESP_OK) ? CLAW_OK : CLAW_ERROR;
+    return CLAW_OK;
 }
 
 static void sched_nvs_restore(void)
 {
-    nvs_handle_t h;
-    esp_err_t err = nvs_open(SCHED_NVS_NS, NVS_READONLY, &h);
-    if (err != ESP_OK) {
-        return; /* No saved tasks */
-    }
-
     uint8_t cnt = 0;
-    err = nvs_get_u8(h, "cnt", &cnt);
-    if (err != ESP_OK || cnt == 0) {
-        nvs_close(h);
+    if (claw_kv_get_u8(SCHED_NVS_NS, "cnt", &cnt) != CLAW_OK
+        || cnt == 0) {
         return;
     }
 
-    CLAW_LOGI(TAG, "restoring %d persistent task(s) from NVS", cnt);
+    CLAW_LOGI(TAG, "restoring %d persistent task(s)", cnt);
 
     for (int i = 0; i < cnt && i < SCHED_AI_MAX; i++) {
         char key[8];
@@ -363,8 +350,8 @@ static void sched_nvs_restore(void)
 
         sched_persist_t rec;
         size_t blob_size = sizeof(rec);
-        err = nvs_get_blob(h, key, &rec, &blob_size);
-        if (err != ESP_OK) {
+        if (claw_kv_get_blob(SCHED_NVS_NS, key,
+                             &rec, &blob_size) != CLAW_OK) {
             continue;
         }
 
@@ -373,31 +360,32 @@ static void sched_nvs_restore(void)
             break;
         }
 
-        snprintf(ctx->name, sizeof(ctx->name), "%s", rec.name);
+        snprintf(ctx->name, sizeof(ctx->name),
+                 "%s", rec.name);
         ctx->prompt = claw_malloc(strlen(rec.prompt) + 1);
         if (!ctx->prompt) {
             ctx->in_use = 0;
             break;
         }
         strcpy(ctx->prompt, rec.prompt);
-        ctx->reply_fn = NULL;  /* late-bound at execution time */
+        ctx->reply_fn = NULL;
         snprintf(ctx->reply_target, REPLY_TARGET_MAX,
                  "%s", rec.reply_target);
 
-        /* Restore with original interval or default 60s */
-        uint32_t interval_s = rec.interval_s > 0 ? rec.interval_s : 60;
+        uint32_t interval_s =
+            rec.interval_s > 0 ? rec.interval_s : 60;
 
-        if (sched_add(rec.name, interval_s * 1000, rec.count,
+        if (sched_add(rec.name, interval_s * 1000,
+                      rec.count,
                       sched_ai_callback, ctx) != CLAW_OK) {
             ctx->in_use = 0;
-            CLAW_LOGW(TAG, "failed to restore task '%s'", rec.name);
+            CLAW_LOGW(TAG, "failed to restore '%s'",
+                      rec.name);
         } else {
-            CLAW_LOGI(TAG, "restored task '%s' (every %us)",
+            CLAW_LOGI(TAG, "restored '%s' (every %us)",
                       rec.name, (unsigned)interval_s);
         }
     }
-
-    nvs_close(h);
 }
 
 static int tool_schedule_task(const cJSON *params, cJSON *result)

@@ -7,10 +7,11 @@
 
 #include <stdio.h>
 #include <signal.h>
-#include <stdatomic.h>
 
 #include "osal/claw_os.h"
+#include "osal/claw_kv.h"
 #include "claw_board.h"
+#include "claw/shell/shell_commands.h"
 
 extern int claw_init(void);
 extern void linux_shell_loop(void);
@@ -34,9 +35,13 @@ int main(void)
 
     printf("rt-claw: Linux native - Real-Time Claw\n");
 
+    claw_kv_init();
     board_early_init();
+    shell_nvs_config_load();
     claw_init();
     linux_shell_loop();
+
+    CLAW_LOGI("main", "shutting down ...");
 
     return 0;
 }

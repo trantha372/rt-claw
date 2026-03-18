@@ -336,10 +336,13 @@ static void receiver_thread(void *arg)
     struct sockaddr_in src;
     socklen_t src_len;
 
-    while (1) {
+    while (!claw_thread_should_exit()) {
         src_len = sizeof(src);
         int n = recvfrom(s_sock, buf, sizeof(buf), 0,
                          (struct sockaddr *)&src, &src_len);
+        if (n < 0 && claw_thread_should_exit()) {
+            break;
+        }
         if (n < 4) {
             continue;
         }

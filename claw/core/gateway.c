@@ -125,9 +125,9 @@ static void gateway_thread_entry(void *param)
 
     CLAW_LOGI(TAG, "started");
 
-    while (1) {
+    while (!claw_thread_should_exit()) {
         if (claw_mq_recv(gw_mq, &msg, sizeof(msg),
-                          CLAW_WAIT_FOREVER) == CLAW_OK) {
+                          1000) == CLAW_OK) {
             dispatch_msg(&msg);
         }
     }

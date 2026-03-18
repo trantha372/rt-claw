@@ -30,15 +30,9 @@
 
 #define TAG "telegram"
 
-#ifdef CLAW_PLATFORM_ESP_IDF
-
-#include "sdkconfig.h"
-
 #ifdef CONFIG_RTCLAW_TELEGRAM_ENABLE
 
-#include "esp_http_client.h"
-#include "esp_crt_bundle.h"
-#include "esp_system.h"
+#include "osal/claw_net.h"
 #include "cJSON.h"
 
 /* ------------------------------------------------------------------ */
@@ -88,67 +82,29 @@ typedef struct {
 } tg_outbound_t;
 
 /* ------------------------------------------------------------------ */
-/*  HTTP helper                                                        */
+/*  HTTP helper (platform-independent via OSAL)                        */
 /* ------------------------------------------------------------------ */
 
-struct http_ctx {
-    char   *buf;
-    size_t  len;
-    size_t  cap;
-};
-
-static esp_err_t on_http_event(esp_http_client_event_t *evt)
-{
-    struct http_ctx *ctx = evt->user_data;
-
-    if (evt->event_id == HTTP_EVENT_ON_DATA && ctx) {
-        if (ctx->len + evt->data_len < ctx->cap) {
-            memcpy(ctx->buf + ctx->len, evt->data, evt->data_len);
-            ctx->len += evt->data_len;
-            ctx->buf[ctx->len] = '\0';
-        }
-    }
-    return ESP_OK;
-}
-
-/*
- * POST JSON to a Telegram Bot API method.
- * URL = s_api_base + "/" + method  (e.g. ".../sendMessage")
- */
 static int tg_api_post(const char *method, const char *body,
-                        char *resp, size_t resp_size, int timeout_ms)
+                        char *resp, size_t resp_size,
+                        int timeout_ms)
 {
+    (void)timeout_ms;
     char url[256];
     snprintf(url, sizeof(url), "%s/%s", s_api_base, method);
 
-    struct http_ctx ctx = { .buf = resp, .len = 0, .cap = resp_size };
+    claw_net_header_t hdrs[1];
+    hdrs[0].key = "Content-Type";
+    hdrs[0].value = "application/json";
 
-    esp_http_client_config_t cfg = {
-        .url = url,
-        .method = HTTP_METHOD_POST,
-        .timeout_ms = timeout_ms,
-        .event_handler = on_http_event,
-        .user_data = &ctx,
-        .crt_bundle_attach = esp_crt_bundle_attach,
-        .buffer_size = 2048,
-        .buffer_size_tx = 2048,
-    };
+    size_t resp_len = 0;
+    int status = claw_net_post(url, hdrs, 1,
+                               body, strlen(body),
+                               resp, resp_size, &resp_len);
 
-    esp_http_client_handle_t client = esp_http_client_init(&cfg);
-    if (!client) {
-        return CLAW_ERROR;
-    }
-
-    esp_http_client_set_header(client, "Content-Type", "application/json");
-    esp_http_client_set_post_field(client, body, strlen(body));
-
-    esp_err_t err = esp_http_client_perform(client);
-    int status = esp_http_client_get_status_code(client);
-    esp_http_client_cleanup(client);
-
-    if (err != ESP_OK || status < 200 || status >= 300) {
-        CLAW_LOGE(TAG, "POST %s failed: err=%d status=%d", method, err,
-                  status);
+    if (status < 200 || status >= 300) {
+        CLAW_LOGE(TAG, "POST %s failed: status=%d",
+                  method, status);
         return CLAW_ERROR;
     }
     return CLAW_OK;
@@ -269,9 +225,9 @@ static void tg_outbound_thread(void *arg)
     (void)arg;
     tg_outbound_t msg;
 
-    while (1) {
+    while (!claw_thread_should_exit()) {
         if (claw_mq_recv(s_outbound_q, &msg, sizeof(msg),
-                         CLAW_WAIT_FOREVER) != CLAW_OK) {
+                         1000) != CLAW_OK) {
             continue;
         }
         if (!msg.text) {
@@ -284,7 +240,7 @@ static void tg_outbound_thread(void *arg)
         send_reply(msg.chat_id, msg.text);
         CLAW_LOGI(TAG, "[%lu ms] >>> sent (heap=%u)",
                   (unsigned long)claw_tick_ms(),
-                  (unsigned)esp_get_free_heap_size());
+                  (unsigned)claw_tick_ms());
         claw_free(msg.text);
     }
 }
@@ -325,9 +281,9 @@ static void tg_ai_worker(void *arg)
 
     tg_inbound_t in;
 
-    while (1) {
+    while (!claw_thread_should_exit()) {
         if (claw_mq_recv(s_inbound_q, &in, sizeof(in),
-                         CLAW_WAIT_FOREVER) != CLAW_OK) {
+                         1000) != CLAW_OK) {
             continue;
         }
 
@@ -370,11 +326,11 @@ static void tg_ai_worker(void *arg)
 
         CLAW_LOGI(TAG, "[%lu ms] ai_chat: \"%s\" (heap=%u)",
                   (unsigned long)claw_tick_ms(), in.text,
-                  (unsigned)esp_get_free_heap_size());
+                  (unsigned)claw_tick_ms());
         int ret = ai_chat(in.text, reply, REPLY_BUF_SIZE);
         CLAW_LOGI(TAG, "[%lu ms] ai_chat ret=%d (heap=%u)",
                   (unsigned long)claw_tick_ms(), ret,
-                  (unsigned)esp_get_free_heap_size());
+                  (unsigned)claw_tick_ms());
 
         ai_set_channel(AI_CHANNEL_SHELL);
         ai_set_channel_hint(NULL);
@@ -468,7 +424,7 @@ static void tg_poll_thread(void *arg)
         return;
     }
 
-    for (;;) {
+    while (!claw_thread_should_exit()) {
         char body[128];
         snprintf(body, sizeof(body),
                  "{\"offset\":%" PRId64 ",\"timeout\":%d}",
@@ -597,12 +553,3 @@ void telegram_set_bot_token(const char *t) { (void)t; }
 const char *telegram_get_bot_token(void)   { return ""; }
 
 #endif /* CONFIG_RTCLAW_TELEGRAM_ENABLE */
-
-#else /* !CLAW_PLATFORM_ESP_IDF */
-
-int  telegram_init(void)  { return 0; }
-int  telegram_start(void) { return 0; }
-void telegram_set_bot_token(const char *t) { (void)t; }
-const char *telegram_get_bot_token(void)   { return ""; }
-
-#endif /* CLAW_PLATFORM_ESP_IDF */

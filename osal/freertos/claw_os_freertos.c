@@ -90,6 +90,11 @@ void claw_thread_yield(void)
     taskYIELD();
 }
 
+int claw_thread_should_exit(void)
+{
+    return 0;
+}
+
 /* ---------- Mutex ---------- */
 
 claw_mutex_t claw_mutex_create(const char *name)

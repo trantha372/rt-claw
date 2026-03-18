@@ -5,6 +5,7 @@ platform_src = files(
     'main.c',
     'shell.c',
     'board.c',
+    'ota_stub.c',
 )
 
 thread_dep = dependency('threads')
