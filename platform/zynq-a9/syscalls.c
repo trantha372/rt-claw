@@ -125,12 +125,58 @@ void _fini(void) {}
 #include "xil_types.h"
 
 int Xil_IsSpinLockEnabled(void) { return 0; }
+int XEmacPs_IsHighSpeedPCS(u32 base) { (void)base; return 0; }
+void XEmacPs_SetupPCS(u32 base) { (void)base; }
 void Xil_SpinLock(void) {}
 void Xil_SpinUnlock(void) {}
 void XTime_SetTime(u64 time) { (void)time; }
+
+/*
+ * MMU table placeholder — xil_mmu.c references MMUTable from
+ * translation_table.S, but we skip MMU init on QEMU.
+ * Provide a dummy 16KB-aligned array to satisfy the linker.
+ */
+u32 MMUTable[4096] __attribute__((aligned(16384)));
 u32 XGetCoreId(void) { return 0; }
+
+/* FreeRTOS+TCP application hooks */
+#include <stdlib.h>
+#include "FreeRTOS.h"
+
+BaseType_t xApplicationGetRandomNumber(uint32_t *pulNumber)
+{
+    /* Simple PRNG — sufficient for DHCP/DNS on QEMU */
+    *pulNumber = (uint32_t)rand();
+    return pdTRUE;
+}
+
+uint32_t ulApplicationGetNextSequenceNumber(uint32_t a, uint16_t b,
+                                            uint32_t c, uint16_t d)
+{
+    (void)a; (void)b; (void)c; (void)d;
+    return (uint32_t)rand();
+}
+
+const char *pcApplicationHostnameHook(void)
+{
+    return "rt-claw";
+}
 
 /* ARM exception handler stubs */
 void FIQInterrupt(void) { while (1); }
-void DataAbortInterrupt(void) { while (1); }
+
+void DataAbortInterrupt(void)
+{
+    extern int printf(const char *, ...);
+    unsigned int dfar, dfsr, lr;
+    __asm__ volatile("mrc p15, 0, %0, c6, c0, 0" : "=r"(dfar));
+    __asm__ volatile("mrc p15, 0, %0, c5, c0, 0" : "=r"(dfsr));
+    __asm__ volatile("mov %0, lr" : "=r"(lr));
+    printf("DATA ABORT: DFAR=0x%08x DFSR=0x%08x LR=0x%08x\n",
+           dfar, dfsr, lr);
+    printf("  Fault at PC=0x%08x\n", lr - 8);
+    while (1) {
+    }
+}
+
 void PrefetchAbortInterrupt(void) { while (1); }
