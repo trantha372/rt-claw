@@ -38,6 +38,10 @@ help:
 	@echo "  make build-zynq-a9-qemu         Build QEMU Zynq-A9"
 	@echo "  make run-zynq-a9-qemu           Build + launch Zynq-A9"
 	@echo ""
+	@echo "Linux native:"
+	@echo "  make build-linux                Build Linux native"
+	@echo "  make run-linux                  Build + run directly"
+	@echo ""
 	@echo "Options:"
 	@echo "  GDB=1       Debug mode (GDB port 1234)"
 	@echo "  GRAPHICS=1  LCD display window (QEMU only)"
@@ -338,6 +342,25 @@ _s3-build:
 		-B $(BUILD_DIR)/esp32s3-$(S3_BOARD)/idf \
 		-DRTCLAW_BOARD=$(S3_BOARD) build
 	@echo "Output: $(BUILD_DIR)/esp32s3-$(S3_BOARD)/"
+
+# --- Linux native ---
+MESON_BUILDDIR_LINUX := $(BUILD_DIR)/linux
+
+.PHONY: build-linux
+build-linux:
+	@if [ ! -f $(MESON_BUILDDIR_LINUX)/build.ninja ]; then \
+		meson setup $(MESON_BUILDDIR_LINUX) -Dosal=linux; \
+	fi
+	meson compile -C $(MESON_BUILDDIR_LINUX)
+	@echo "Output: $(MESON_BUILDDIR_LINUX)/platform/linux/rtclaw"
+
+.PHONY: run-linux
+run-linux: build-linux
+	$(MESON_BUILDDIR_LINUX)/platform/linux/rtclaw
+
+.PHONY: clean-linux
+clean-linux:
+	rm -rf $(MESON_BUILDDIR_LINUX)
 
 # --- Clean ---
 

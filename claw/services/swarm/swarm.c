@@ -20,7 +20,8 @@
 /* BSD socket API — included directly, not via claw_net.h */
 #ifdef CLAW_PLATFORM_ESP_IDF
 #include "lwip/sockets.h"
-#elif defined(CLAW_PLATFORM_RTTHREAD)
+#elif defined(CLAW_PLATFORM_RTTHREAD) || \
+    defined(CLAW_PLATFORM_LINUX)
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -60,6 +61,26 @@ static uint32_t generate_node_id(void)
     return 0x52540000 | (claw_tick_ms() & 0xFFFF);
 }
 
+#elif defined(CLAW_PLATFORM_LINUX)
+
+static uint32_t generate_node_id(void)
+{
+    FILE *f = fopen("/etc/machine-id", "r");
+    if (f) {
+        char buf[33];
+        if (fgets(buf, sizeof(buf), f)) {
+            fclose(f);
+            uint32_t hash = 0;
+            for (int i = 0; buf[i]; i++) {
+                hash = hash * 31 + (uint8_t)buf[i];
+            }
+            return hash;
+        }
+        fclose(f);
+    }
+    return 0x4C4E5800 | (claw_tick_ms() & 0xFFFF);
+}
+
 #else
 
 static uint32_t generate_node_id(void)
@@ -71,9 +92,11 @@ static uint32_t generate_node_id(void)
 
 /*
  * Shared socket-based swarm implementation.
- * Requires POSIX socket API (lwIP on ESP-IDF or SAL on RT-Thread).
+ * Requires POSIX socket API.
  */
-#if defined(CLAW_PLATFORM_ESP_IDF) || defined(CLAW_PLATFORM_RTTHREAD)
+#if defined(CLAW_PLATFORM_ESP_IDF) || \
+    defined(CLAW_PLATFORM_RTTHREAD) || \
+    defined(CLAW_PLATFORM_LINUX)
 
 static int s_sock = -1;
 static claw_timer_t s_hb_timer;

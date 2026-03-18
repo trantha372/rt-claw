@@ -24,6 +24,8 @@
 #include "esp_heap_caps.h"
 #elif defined(CLAW_PLATFORM_RTTHREAD)
 #include <rtthread.h>
+#elif defined(CLAW_PLATFORM_LINUX)
+#include <sys/sysinfo.h>
 #endif
 
 #define TAG "heartbeat"
@@ -155,6 +157,14 @@ static void check_device_health(void)
     rt_memory_info(&total_rt, &used_rt, &max_rt);
     free_kb = (uint32_t)((total_rt - used_rt) / 1024);
     total_kb = (uint32_t)(total_rt / 1024);
+#elif defined(CLAW_PLATFORM_LINUX)
+    struct sysinfo si;
+    if (sysinfo(&si) == 0) {
+        free_kb = (uint32_t)(
+            (si.freeram * si.mem_unit) / 1024);
+        total_kb = (uint32_t)(
+            (si.totalram * si.mem_unit) / 1024);
+    }
 #endif
 
     if (total_kb == 0) {

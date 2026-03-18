@@ -591,4 +591,10 @@ void sched_set_reply_context(sched_reply_fn_t fn, const char *target)
     (void)target;
 }
 
+int sched_tool_remove_by_name(const char *name)
+{
+    (void)name;
+    return -1;
+}
+
 #endif

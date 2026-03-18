@@ -62,6 +62,8 @@ elif osal_backend == 'freertos'
     else
         platform_defs += ['-DCLAW_PLATFORM_ESP_IDF']
     endif
+elif osal_backend == 'linux'
+    platform_defs += ['-DCLAW_PLATFORM_LINUX']
 endif
 
 # ---- Unified configuration via claw_config_generated.h ----
@@ -148,4 +150,8 @@ subdir('tests/unit')
 _fw_plat = get_option('platform')
 if _fw_plat == 'zynq-a9'
     subdir('platform/zynq-a9')
+endif
+
+if osal_backend == 'linux'
+    subdir('platform/linux')
 endif

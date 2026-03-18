@@ -337,6 +337,106 @@ void claw_tools_register_system(void)
     register_memory_tools();
 }
 
+#elif defined(CLAW_PLATFORM_LINUX)
+
+#include <stdlib.h>
+#include <sys/utsname.h>
+#include <sys/sysinfo.h>
+
+static int tool_system_info(const cJSON *params, cJSON *result)
+{
+    (void)params;
+    struct utsname uts;
+    uname(&uts);
+
+    cJSON_AddStringToObject(result, "status", "ok");
+    cJSON_AddStringToObject(result, "project", "rt-claw");
+    cJSON_AddStringToObject(result, "version", RT_CLAW_VERSION);
+    cJSON_AddStringToObject(result, "platform", "Linux native");
+    cJSON_AddStringToObject(result, "kernel", uts.release);
+    cJSON_AddStringToObject(result, "arch", uts.machine);
+
+    struct sysinfo si;
+    if (sysinfo(&si) == 0) {
+        cJSON_AddNumberToObject(result, "uptime_seconds",
+                                (double)si.uptime);
+    }
+    return CLAW_OK;
+}
+
+static int tool_memory_info(const cJSON *params, cJSON *result)
+{
+    (void)params;
+    struct sysinfo si;
+    if (sysinfo(&si) != 0) {
+        cJSON_AddStringToObject(result, "error",
+                                "sysinfo failed");
+        return CLAW_ERROR;
+    }
+
+    cJSON_AddStringToObject(result, "status", "ok");
+    cJSON_AddNumberToObject(result, "total_ram_mb",
+        (double)si.totalram * si.mem_unit / (1024 * 1024));
+    cJSON_AddNumberToObject(result, "free_ram_mb",
+        (double)si.freeram * si.mem_unit / (1024 * 1024));
+    cJSON_AddNumberToObject(result, "used_percent",
+        (1.0 - (double)si.freeram / si.totalram) * 100.0);
+    return CLAW_OK;
+}
+
+static const char schema_empty[] =
+    "{\"type\":\"object\",\"properties\":{}}";
+
+static int tool_clear_history(const cJSON *params, cJSON *result)
+{
+    (void)params;
+    int count = ai_memory_count();
+    ai_memory_clear();
+    cJSON_AddStringToObject(result, "status", "ok");
+    char msg[64];
+    snprintf(msg, sizeof(msg),
+             "cleared %d messages", count);
+    cJSON_AddStringToObject(result, "message", msg);
+    return CLAW_OK;
+}
+
+static int tool_system_restart(const cJSON *params, cJSON *result)
+{
+    (void)params;
+    cJSON_AddStringToObject(result, "status", "ok");
+    cJSON_AddStringToObject(result, "message",
+                            "Exiting (Linux native)");
+    CLAW_LOGW(TAG, "exit requested via tool");
+    claw_thread_delay_ms(500);
+    exit(0);
+    return CLAW_OK;
+}
+
+void claw_tools_register_system(void)
+{
+    claw_tool_register("system_info",
+        "Get system info: kernel, architecture, uptime.",
+        schema_empty, tool_system_info,
+        0, CLAW_TOOL_LOCAL_ONLY);
+
+    claw_tool_register("memory_info",
+        "Get memory: total RAM, free RAM, usage percent.",
+        schema_empty, tool_memory_info,
+        0, CLAW_TOOL_LOCAL_ONLY);
+
+    claw_tool_register("clear_history",
+        "Clear the conversation history.",
+        schema_empty, tool_clear_history,
+        0, CLAW_TOOL_LOCAL_ONLY);
+
+    register_memory_tools();
+
+    claw_tool_register("system_restart",
+        "Exit the process (no reboot on Linux).",
+        schema_empty, tool_system_restart,
+        0, CLAW_TOOL_LOCAL_ONLY);
+}
+
 #else /* unknown platform */
 
 void claw_tools_register_system(void)

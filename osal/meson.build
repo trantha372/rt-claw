@@ -28,6 +28,23 @@ elif osal_backend == 'freertos'
         link_with: osal_lib,
         include_directories: claw_inc,
     )
+elif osal_backend == 'linux'
+    libcurl_dep = dependency('libcurl', required: true)
+    osal_src = files(
+        'linux/claw_os_linux.c',
+        'linux/claw_net_linux.c',
+        'linux/claw_kv_linux.c',
+    )
+    osal_lib = static_library('osal', osal_src,
+        include_directories: [claw_inc] + platform_incs,
+        c_args: platform_defs,
+        dependencies: [libcurl_dep],
+    )
+    osal_dep = declare_dependency(
+        link_with: osal_lib,
+        include_directories: claw_inc,
+        dependencies: [libcurl_dep],
+    )
 else
     # osal='none': OSAL compiled by platform build system.
     osal_dep = declare_dependency(

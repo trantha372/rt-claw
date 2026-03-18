@@ -17,6 +17,8 @@ make vexpress-a9-qemu                  # Meson + SCons → build/vexpress-a9-qem
 make build-zynq-a9-qemu               # Meson full firmware → build/zynq-a9-qemu/
 make build-esp32s3-qemu                # Meson + idf.py (requires ESP-IDF)
 make esp32s3                           # Meson + idf.py (real hardware)
+make build-linux                       # Linux native (no cross-compile)
+make run-linux                         # Build + run directly
 
 # Meson only (libraries)
 meson setup build/vexpress-a9-qemu --cross-file platform/vexpress-a9/cross.ini
@@ -81,6 +83,10 @@ make run-esp32s3-qemu GDB=1           # debug mode (GDB port 1234)
 # ESP32-S3 real hardware
 make flash-esp32s3                     # build + flash firmware
 make monitor-esp32s3                   # serial monitor
+
+# Linux native (no QEMU, no cross-compile)
+make build-linux                       # meson setup + compile
+make run-linux                         # build + run directly
 ```
 
 ## Code Style
@@ -184,6 +190,7 @@ Project-level skills in `.claude/skills/`, invoked via `/command-name`:
 | `drivers/serial/espressif/` | Serial console driver |
 | `osal/freertos/` | FreeRTOS OSAL implementation |
 | `osal/rtthread/` | RT-Thread OSAL implementation |
+| `osal/linux/` | Linux OSAL (pthreads + libcurl + file KV) |
 | `vendor/lib/cjson/` | cJSON library |
 | `vendor/os/freertos/` | FreeRTOS-Kernel (submodule) |
 | `vendor/os/rt-thread/` | RT-Thread (submodule) |
@@ -198,6 +205,7 @@ Project-level skills in `.claude/skills/`, invoked via `/command-name`:
 | `platform/esp32c3/boards/` | Board-specific configs (qemu, devkit, xiaozhi-xmini) |
 | `platform/esp32s3/` | ESP32-S3 unified ESP-IDF project (all boards) |
 | `platform/esp32s3/boards/` | Board-specific configs (qemu, default) |
+| `platform/linux/` | Linux native platform (pthreads, libcurl, stdin shell) |
 | `platform/zynq-a9/` | Zynq-A9 QEMU (FreeRTOS + FreeRTOS+TCP, Cadence GEM) |
 | `platform/zynq-a9/drivers/` | Patched Zynq GEM NetworkInterface (ISR/PHY fixes) |
 | `platform/vexpress-a9/` | RT-Thread BSP + Meson cross-file |
