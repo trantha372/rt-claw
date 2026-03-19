@@ -1,18 +1,14 @@
-# Linker fragment for rt-claw OOP auto-registration sections.
-# Ensures --gc-sections does not discard claw_services/claw_drivers/claw_tools.
-
 [sections:claw_registry]
 entries:
-    claw_services
-    claw_drivers
-    claw_tools
+    claw_services+
+    claw_drivers+
+    claw_tools+
 
 [scheme:claw_registry_default]
 entries:
     claw_registry -> flash_rodata
 
 [mapping:claw_registry]
-archive: *
+archive: librt_claw.a
 entries:
-    * (claw_registry);
-        claw_registry_default
+    * (claw_registry_default)
