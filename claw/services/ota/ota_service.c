@@ -23,6 +23,8 @@
 
 #define TAG "ota"
 
+static claw_thread_t s_check_thread;
+
 /* Accessed from OTA worker thread and main thread */
 static volatile Claw_OtaState s_state = CLAW_OTA_IDLE;
 
@@ -220,6 +222,11 @@ static void ota_worker_thread(void *arg)
 
 int ota_trigger_update(const char *url)
 {
+    if (!claw_ota_supported()) {
+        CLAW_LOGW(TAG, "OTA not supported on this platform");
+        return CLAW_ERROR;
+    }
+
     if (s_state == CLAW_OTA_DOWNLOADING) {
         CLAW_LOGW(TAG, "OTA already in progress");
         return CLAW_ERROR;
@@ -253,7 +260,7 @@ static void ota_check_thread(void *arg)
     /* Wait for network to stabilize after boot */
     claw_thread_delay_ms(30000);
 
-    while (1) {
+    while (!claw_thread_should_exit()) {
         if (s_state == CLAW_OTA_IDLE) {
             claw_ota_info_t info;
             int ret = ota_check_update(&info);
@@ -287,12 +294,21 @@ int ota_service_init(void)
 int ota_service_start(void)
 {
 #if CONFIG_RTCLAW_OTA_CHECK_INTERVAL_MS > 0
-    if (!claw_thread_create("ota_check", ota_check_thread,
-                            NULL, 4096, 18)) {
+    s_check_thread = claw_thread_create("ota_check",
+        ota_check_thread, NULL, 4096, 18);
+    if (!s_check_thread) {
         CLAW_LOGW(TAG, "auto-check thread create failed");
     }
 #endif
     return CLAW_OK;
+}
+
+void ota_service_stop(void)
+{
+    if (s_check_thread) {
+        claw_thread_delete(s_check_thread);
+        s_check_thread = NULL;
+    }
 }
 
 #endif /* CONFIG_RTCLAW_OTA_ENABLE */

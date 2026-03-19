@@ -20,8 +20,10 @@
 /* BSD socket API — included directly, not via claw_net.h */
 #ifdef CLAW_PLATFORM_ESP_IDF
 #include "lwip/sockets.h"
-#elif defined(CLAW_PLATFORM_RTTHREAD)
+#elif defined(CLAW_PLATFORM_RTTHREAD) || \
+    defined(CLAW_PLATFORM_LINUX)
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
@@ -60,6 +62,26 @@ static uint32_t generate_node_id(void)
     return 0x52540000 | (claw_tick_ms() & 0xFFFF);
 }
 
+#elif defined(CLAW_PLATFORM_LINUX)
+
+static uint32_t generate_node_id(void)
+{
+    FILE *f = fopen("/etc/machine-id", "r");
+    if (f) {
+        char buf[33];
+        if (fgets(buf, sizeof(buf), f)) {
+            fclose(f);
+            uint32_t hash = 0;
+            for (int i = 0; buf[i]; i++) {
+                hash = hash * 31 + (uint8_t)buf[i];
+            }
+            return hash;
+        }
+        fclose(f);
+    }
+    return 0x4C4E5800 | (claw_tick_ms() & 0xFFFF);
+}
+
 #else
 
 static uint32_t generate_node_id(void)
@@ -71,12 +93,15 @@ static uint32_t generate_node_id(void)
 
 /*
  * Shared socket-based swarm implementation.
- * Requires POSIX socket API (lwIP on ESP-IDF or SAL on RT-Thread).
+ * Requires POSIX socket API.
  */
-#if defined(CLAW_PLATFORM_ESP_IDF) || defined(CLAW_PLATFORM_RTTHREAD)
+#if defined(CLAW_PLATFORM_ESP_IDF) || \
+    defined(CLAW_PLATFORM_RTTHREAD) || \
+    defined(CLAW_PLATFORM_LINUX)
 
 static int s_sock = -1;
 static claw_timer_t s_hb_timer;
+static claw_thread_t s_rx_thread;
 
 /* --- RPC state --- */
 static claw_sem_t   s_rpc_sem;
@@ -313,10 +338,13 @@ static void receiver_thread(void *arg)
     struct sockaddr_in src;
     socklen_t src_len;
 
-    while (1) {
+    while (!claw_thread_should_exit()) {
         src_len = sizeof(src);
         int n = recvfrom(s_sock, buf, sizeof(buf), 0,
                          (struct sockaddr *)&src, &src_len);
+        if (n < 0 && claw_thread_should_exit()) {
+            break;
+        }
         if (n < 4) {
             continue;
         }
@@ -508,6 +536,11 @@ int swarm_start(void)
     setsockopt(s_sock, SOL_SOCKET, SO_BROADCAST, &opt, sizeof(opt));
     setsockopt(s_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
+    /* Recv timeout so recvfrom() can be interrupted for shutdown */
+    struct timeval tv = { .tv_sec = 1, .tv_usec = 0 };
+    setsockopt(s_sock, SOL_SOCKET, SO_RCVTIMEO,
+               &tv, sizeof(tv));
+
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
@@ -540,11 +573,11 @@ int swarm_start(void)
     claw_timer_start(s_hb_timer);
     heartbeat_send(); /* first heartbeat immediately, don't wait for timer */
 
-    claw_thread_t rx = claw_thread_create("swarm_rx", receiver_thread,
-                                           NULL,
-                                           CLAW_SWARM_THREAD_STACK,
-                                           CLAW_SWARM_THREAD_PRIO);
-    if (!rx) {
+    s_rx_thread = claw_thread_create("swarm_rx", receiver_thread,
+                                      NULL,
+                                      CLAW_SWARM_THREAD_STACK,
+                                      CLAW_SWARM_THREAD_PRIO);
+    if (!s_rx_thread) {
         CLAW_LOGE(TAG, "rx thread create failed");
         close(s_sock);
         s_sock = -1;
@@ -555,6 +588,35 @@ int swarm_start(void)
     return CLAW_OK;
 }
 
+void swarm_stop(void)
+{
+    /* Close socket first to unblock recvfrom() */
+    if (s_sock >= 0) {
+        close(s_sock);
+        s_sock = -1;
+    }
+
+    claw_thread_delete(s_rx_thread);
+    s_rx_thread = NULL;
+
+    if (s_hb_timer) {
+        claw_timer_stop(s_hb_timer);
+        claw_timer_delete(s_hb_timer);
+        s_hb_timer = NULL;
+    }
+
+    if (s_rpc_sem) {
+        claw_sem_delete(s_rpc_sem);
+        s_rpc_sem = NULL;
+    }
+    if (s_rpc_lock) {
+        claw_mutex_delete(s_rpc_lock);
+        s_rpc_lock = NULL;
+    }
+
+    CLAW_LOGI(TAG, "stopped");
+}
+
 #else /* no socket support */
 
 int swarm_start(void)
@@ -562,6 +624,8 @@ int swarm_start(void)
     CLAW_LOGI(TAG, "heartbeat not available on this platform");
     return CLAW_OK;
 }
+
+void swarm_stop(void) {}
 
 int swarm_rpc_call(const char *tool_name, const char *params,
                    char *result, size_t result_sz)

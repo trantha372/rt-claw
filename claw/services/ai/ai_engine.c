@@ -82,6 +82,7 @@ struct ai_request {
 };
 
 static claw_mq_t s_ai_queue;
+static claw_thread_t s_worker_thread;
 
 /* Worker-local active callback (set per request) */
 static ai_status_cb_t s_active_cb;
@@ -911,9 +912,9 @@ static void ai_worker_thread(void *arg)
 
     CLAW_LOGI(TAG, "worker started");
 
-    while (1) {
+    while (!claw_thread_should_exit()) {
         if (claw_mq_recv(s_ai_queue, &req, sizeof(req),
-                          CLAW_WAIT_FOREVER) != CLAW_OK) {
+                          1000) != CLAW_OK) {
             continue;
         }
 
@@ -956,7 +957,15 @@ static int submit_and_wait(struct ai_request *req)
         return CLAW_ERROR;
     }
 
-    claw_sem_take(req->done, CLAW_WAIT_FOREVER);
+    /* Wait with periodic exit check so shutdown doesn't hang */
+    while (claw_sem_take(req->done, 500) != CLAW_OK) {
+        if (claw_thread_should_exit()) {
+            claw_sem_delete(req->done);
+            snprintf(req->reply, req->reply_size,
+                     "[shutdown in progress]");
+            return CLAW_ERROR;
+        }
+    }
     claw_sem_delete(req->done);
     return req->result;
 }
@@ -1079,9 +1088,10 @@ int ai_engine_init(void)
     CLAW_LOGI(TAG, "api format: %s",
               s_openai_compat ? "openai" : "claude");
 
-    if (!claw_thread_create("ai_worker", ai_worker_thread, NULL,
-                             CLAW_AI_WORKER_STACK,
-                             CLAW_AI_WORKER_PRIO)) {
+    s_worker_thread = claw_thread_create("ai_worker", ai_worker_thread,
+                                          NULL, CLAW_AI_WORKER_STACK,
+                                          CLAW_AI_WORKER_PRIO);
+    if (!s_worker_thread) {
         CLAW_LOGE(TAG, "worker thread create failed");
         return CLAW_ERROR;
     }
@@ -1095,6 +1105,19 @@ int ai_engine_init(void)
         claw_lcd_status("AI ready - waiting for input");
     }
     return CLAW_OK;
+}
+
+void ai_engine_stop(void)
+{
+    claw_thread_delete(s_worker_thread);
+    s_worker_thread = NULL;
+
+    if (s_ai_queue) {
+        claw_mq_delete(s_ai_queue);
+        s_ai_queue = NULL;
+    }
+
+    CLAW_LOGI(TAG, "stopped");
 }
 
 int ai_ping(void)

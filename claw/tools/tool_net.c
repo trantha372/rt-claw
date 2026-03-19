@@ -387,13 +387,89 @@ static int tool_http_request(const cJSON *params, cJSON *result)
     return CLAW_OK;
 }
 
+#elif defined(CLAW_PLATFORM_LINUX)
+
+#include "osal/claw_net.h"
+
+static int tool_http_request(const cJSON *params, cJSON *result)
+{
+    cJSON *j_url = cJSON_GetObjectItem(params, "url");
+    if (!j_url || !cJSON_IsString(j_url)) {
+        cJSON_AddStringToObject(result, "error",
+                                "missing 'url' parameter");
+        return CLAW_OK;
+    }
+
+    const char *url = j_url->valuestring;
+    const char *method = "GET";
+    const char *body = NULL;
+    const char *content_type = "application/json";
+
+    cJSON *j_method = cJSON_GetObjectItem(params, "method");
+    if (j_method && cJSON_IsString(j_method)) {
+        method = j_method->valuestring;
+    }
+    cJSON *j_body = cJSON_GetObjectItem(params, "body");
+    if (j_body && cJSON_IsString(j_body)) {
+        body = j_body->valuestring;
+    }
+    cJSON *j_ct = cJSON_GetObjectItem(params, "content_type");
+    if (j_ct && cJSON_IsString(j_ct)) {
+        content_type = j_ct->valuestring;
+    }
+
+    char *resp_buf = claw_malloc(NET_RESP_MAX);
+    if (!resp_buf) {
+        cJSON_AddStringToObject(result, "error",
+                                "out of memory");
+        return CLAW_OK;
+    }
+
+    claw_net_header_t hdrs[2];
+    hdrs[0].key = "Content-Type";
+    hdrs[0].value = content_type;
+    hdrs[1].key = "User-Agent";
+    hdrs[1].value = "rt-claw/0.1";
+
+    CLAW_LOGI(TAG, "%s %s", method, url);
+    size_t resp_len = 0;
+    int status;
+
+    if (strcmp(method, "POST") == 0 && body) {
+        status = claw_net_post(url, hdrs, 2,
+            body, strlen(body),
+            resp_buf, NET_RESP_MAX, &resp_len);
+    } else {
+        status = claw_net_get(url, hdrs, 2,
+            resp_buf, NET_RESP_MAX, &resp_len);
+    }
+
+    if (status < 0) {
+        claw_free(resp_buf);
+        cJSON_AddStringToObject(result, "error",
+                                "HTTP request failed");
+        return CLAW_OK;
+    }
+
+    cJSON_AddStringToObject(result, "status", "ok");
+    cJSON_AddNumberToObject(result, "status_code",
+                            status);
+    cJSON_AddStringToObject(result, "body", resp_buf);
+    if (resp_len >= NET_RESP_MAX - 1) {
+        cJSON_AddBoolToObject(result, "truncated", 1);
+    }
+
+    claw_free(resp_buf);
+    return CLAW_OK;
+}
+
 #else /* unknown platform */
 
 static int tool_http_request(const cJSON *params, cJSON *result)
 {
     (void)params;
     cJSON_AddStringToObject(result, "error",
-                            "networking not supported on this platform");
+        "networking not supported on this platform");
     return CLAW_OK;
 }
 
@@ -419,7 +495,8 @@ static const char schema_http_request[] =
 
 void claw_tools_register_net(void)
 {
-#ifdef CLAW_PLATFORM_ESP_IDF
+#if defined(CLAW_PLATFORM_ESP_IDF) || \
+    defined(CLAW_PLATFORM_LINUX)
     static const char desc[] =
         "Make an HTTP or HTTPS request (GET or POST). Returns status code "
         "and response body. IMPORTANT: responses larger than 4KB are "

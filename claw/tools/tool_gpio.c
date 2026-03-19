@@ -497,9 +497,44 @@ void claw_tools_register_gpio(void)
 
 #else /* non-ESP-IDF */
 
+static int tool_gpio_unsupported(const cJSON *params,
+                                  cJSON *result)
+{
+    (void)params;
+    cJSON_AddStringToObject(result, "error",
+        "GPIO not supported on this platform");
+    return CLAW_OK;
+}
+
+static const char schema_gpio_empty[] =
+    "{\"type\":\"object\",\"properties\":{}}";
+
 void claw_tools_register_gpio(void)
 {
-    /* GPIO tools not available on this platform */
+    claw_tool_register("gpio_set",
+        "Set GPIO pin (unsupported on this platform).",
+        schema_gpio_empty, tool_gpio_unsupported,
+        SWARM_CAP_GPIO, CLAW_TOOL_LOCAL_ONLY);
+
+    claw_tool_register("gpio_get",
+        "Read GPIO pin (unsupported on this platform).",
+        schema_gpio_empty, tool_gpio_unsupported,
+        SWARM_CAP_GPIO, CLAW_TOOL_LOCAL_ONLY);
+
+    claw_tool_register("gpio_config",
+        "Configure GPIO (unsupported on this platform).",
+        schema_gpio_empty, tool_gpio_unsupported,
+        SWARM_CAP_GPIO, CLAW_TOOL_LOCAL_ONLY);
+
+    claw_tool_register("gpio_blink",
+        "Blink GPIO (unsupported on this platform).",
+        schema_gpio_empty, tool_gpio_unsupported,
+        SWARM_CAP_GPIO, CLAW_TOOL_LOCAL_ONLY);
+
+    claw_tool_register("gpio_blink_stop",
+        "Stop blink (unsupported on this platform).",
+        schema_gpio_empty, tool_gpio_unsupported,
+        SWARM_CAP_GPIO, CLAW_TOOL_LOCAL_ONLY);
 }
 
 #endif

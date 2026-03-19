@@ -15,6 +15,7 @@
 #include "claw/services/ai/ai_memory.h"
 #include "claw/tools/claw_tools.h"
 #include "claw/services/im/feishu.h"
+#include "claw/services/im/telegram.h"
 #include "claw/services/net/net_service.h"
 
 #ifdef CONFIG_RTCLAW_SKILL_ENABLE
@@ -67,6 +68,12 @@ void shell_nvs_config_load(void)
     if (claw_kv_get_str(SHELL_NVS_NS_FEISHU, "app_secret",
                         buf, sizeof(buf)) == CLAW_OK) {
         feishu_set_app_secret(buf);
+    }
+
+    /* Load Telegram config from KV */
+    if (claw_kv_get_str(SHELL_NVS_NS_TELEGRAM, "bot_token",
+                        buf, sizeof(buf)) == CLAW_OK) {
+        telegram_set_bot_token(buf);
     }
 }
 
@@ -205,6 +212,30 @@ static void cmd_feishu_status(int argc, char **argv)
            feishu_get_app_secret()[0] ? "****" : "(not set)");
 }
 
+static void cmd_telegram_set(int argc, char **argv)
+{
+    if (argc < 2) {
+        printf("Usage: /telegram_set <bot_token>\n");
+        return;
+    }
+
+    telegram_set_bot_token(argv[1]);
+    shell_nvs_save_str(SHELL_NVS_NS_TELEGRAM, "bot_token",
+                       argv[1]);
+    printf("Telegram token saved (reboot to apply).\n");
+}
+
+static void cmd_telegram_status(int argc, char **argv)
+{
+    (void)argc;
+    (void)argv;
+    const char *tok = telegram_get_bot_token();
+
+    printf("Telegram:\n");
+    printf("  Bot token: %s\n",
+           tok[0] ? "****" : "(not set)");
+}
+
 static void cmd_remember(int argc, char **argv)
 {
     if (argc < 3) {
@@ -326,13 +357,18 @@ static void cmd_ota(int argc, char **argv)
         return;
     }
 
-    if (strcmp(argv[1], "check") == 0) {
+    if (strcmp(argv[1], "version") == 0) {
+        printf("Running: %s\n", claw_ota_running_version());
+    } else if (!claw_ota_supported()) {
+        printf("OTA not supported on this platform.\n");
+    } else if (strcmp(argv[1], "check") == 0) {
         claw_ota_info_t info;
         int ret = ota_check_update(&info);
         if (ret == 1) {
             printf("Update available: %s\n", info.version);
             printf("  URL:  %s\n", info.url);
-            printf("  Size: %lu bytes\n", (unsigned long)info.size);
+            printf("  Size: %lu bytes\n",
+                   (unsigned long)info.size);
             printf("Run '/ota update' to install.\n");
         } else if (ret == 0) {
             printf("Firmware is up to date (%s).\n",
@@ -342,22 +378,23 @@ static void cmd_ota(int argc, char **argv)
         }
     } else if (strcmp(argv[1], "update") == 0) {
         if (argc >= 3) {
-            /* Direct URL provided */
             if (ota_trigger_update(argv[2]) == CLAW_OK) {
-                printf("OTA update started from: %s\n", argv[2]);
+                printf("OTA update started.\n");
             } else {
                 printf("[error] failed to start OTA\n");
             }
         } else {
-            /* Check server then update */
-            claw_ota_info_t info;
-            int ret = ota_check_update(&info);
-            if (ret == 1) {
-                printf("Updating to %s ...\n", info.version);
-                if (ota_trigger_update(info.url) != CLAW_OK) {
-                    printf("[error] failed to start OTA\n");
+            claw_ota_info_t uinfo;
+            int ur = ota_check_update(&uinfo);
+            if (ur == 1) {
+                if (ota_trigger_update(uinfo.url)
+                        == CLAW_OK) {
+                    printf("Updating to %s ...\n",
+                           uinfo.version);
+                } else {
+                    printf("[error] OTA start failed\n");
                 }
-            } else if (ret == 0) {
+            } else if (ur == 0) {
                 printf("Already up to date (%s).\n",
                        claw_ota_running_version());
             } else {
@@ -365,12 +402,13 @@ static void cmd_ota(int argc, char **argv)
             }
         }
     } else if (strcmp(argv[1], "rollback") == 0) {
-        printf("Rolling back firmware ...\n");
-        claw_ota_rollback();
-    } else if (strcmp(argv[1], "version") == 0) {
-        printf("Running: %s\n", claw_ota_running_version());
+        if (claw_ota_rollback() != CLAW_OK) {
+            printf("[error] rollback failed\n");
+        } else {
+            printf("Rolling back firmware ...\n");
+        }
     } else {
-        printf("Usage: /ota check|update [url]|rollback|version\n");
+        printf("Usage: /ota version|check|update|rollback\n");
     }
 }
 #endif
@@ -393,6 +431,8 @@ const shell_cmd_t shell_common_commands[] = {
     SHELL_CMD("/ai_status",     cmd_ai_status,     "Show AI config"),
     SHELL_CMD("/feishu_set",    cmd_feishu_set,    "Set Feishu creds (NVS)"),
     SHELL_CMD("/feishu_status", cmd_feishu_status, "Show Feishu config"),
+    SHELL_CMD("/telegram_set",  cmd_telegram_set,  "Set Telegram token"),
+    SHELL_CMD("/telegram_status", cmd_telegram_status, "Show Telegram config"),
     SHELL_CMD("/ip",            cmd_ip,            "Show IP address"),
     SHELL_CMD("/remember",      cmd_remember,      "Save to long-term memory"),
     SHELL_CMD("/forget",        cmd_forget,        "Delete a long-term memory"),

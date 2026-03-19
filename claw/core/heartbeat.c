@@ -24,6 +24,8 @@
 #include "esp_heap_caps.h"
 #elif defined(CLAW_PLATFORM_RTTHREAD)
 #include <rtthread.h>
+#elif defined(CLAW_PLATFORM_LINUX)
+#include <sys/sysinfo.h>
 #endif
 
 #define TAG "heartbeat"
@@ -42,6 +44,7 @@ static hb_event_t  s_events[CLAW_HEARTBEAT_MAX_EVENTS];
 static int          s_event_count;
 static claw_mutex_t s_lock;
 static int          s_busy;
+static claw_thread_t s_last_worker;
 
 /* IM reply destination (optional) */
 static heartbeat_reply_fn_t s_reply_fn;
@@ -155,6 +158,14 @@ static void check_device_health(void)
     rt_memory_info(&total_rt, &used_rt, &max_rt);
     free_kb = (uint32_t)((total_rt - used_rt) / 1024);
     total_kb = (uint32_t)(total_rt / 1024);
+#elif defined(CLAW_PLATFORM_LINUX)
+    struct sysinfo si;
+    if (sysinfo(&si) == 0) {
+        free_kb = (uint32_t)(
+            (si.freeram * si.mem_unit) / 1024);
+        total_kb = (uint32_t)(
+            (si.totalram * si.mem_unit) / 1024);
+    }
 #endif
 
     if (total_kb == 0) {
@@ -213,14 +224,21 @@ static void heartbeat_tick(void *arg)
         return;
     }
 
+    /* Reclaim previous worker before spawning a new one */
+    if (s_last_worker) {
+        claw_mutex_unlock(s_lock);
+        claw_thread_delete(s_last_worker);
+        s_last_worker = NULL;
+        claw_mutex_lock(s_lock, CLAW_WAIT_FOREVER);
+    }
+
     if (s_event_count == 0) {
-        /* No events — do a lightweight LLM ping instead */
         s_busy = 1;
         claw_mutex_unlock(s_lock);
 
-        claw_thread_t th = claw_thread_create(
+        s_last_worker = claw_thread_create(
             "hb_ping", ping_thread, NULL, 4096, 20);
-        if (!th) {
+        if (!s_last_worker) {
             CLAW_LOGE(TAG, "ping thread create failed");
             claw_mutex_lock(s_lock, CLAW_WAIT_FOREVER);
             s_busy = 0;
@@ -232,10 +250,10 @@ static void heartbeat_tick(void *arg)
     s_busy = 1;
     claw_mutex_unlock(s_lock);
 
-    claw_thread_t th = claw_thread_create(
+    s_last_worker = claw_thread_create(
         "hb_ai", heartbeat_ai_thread, NULL,
         CLAW_HEARTBEAT_THREAD_STACK, 20);
-    if (!th) {
+    if (!s_last_worker) {
         CLAW_LOGE(TAG, "thread create failed");
         claw_mutex_lock(s_lock, CLAW_WAIT_FOREVER);
         s_busy = 0;
@@ -278,6 +296,30 @@ int heartbeat_init(void)
               CLAW_HEARTBEAT_INTERVAL_MS / 1000,
               CLAW_HEARTBEAT_MAX_EVENTS);
     return CLAW_OK;
+}
+
+void heartbeat_stop(void)
+{
+    sched_remove("heartbeat");
+
+    /* Wait for any in-flight callback to finish */
+    while (s_busy) {
+        claw_thread_delay_ms(100);
+    }
+
+    if (s_last_worker) {
+        claw_thread_delete(s_last_worker);
+        s_last_worker = NULL;
+    }
+    if (s_lock) {
+        claw_mutex_delete(s_lock);
+        s_lock = NULL;
+    }
+    if (s_reply_lock) {
+        claw_mutex_delete(s_reply_lock);
+        s_reply_lock = NULL;
+    }
+    CLAW_LOGI(TAG, "stopped");
 }
 
 void heartbeat_post(const char *category, const char *message)

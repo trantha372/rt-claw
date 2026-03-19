@@ -331,6 +331,62 @@ void net_print_ipinfo(void)
     }
 }
 
+#elif defined(CLAW_PLATFORM_LINUX)
+
+#include <stdio.h>
+#include <ifaddrs.h>
+#include <arpa/inet.h>
+#include <net/if.h>
+
+int net_service_init(void)
+{
+    CLAW_LOGI(TAG, "network service ready (Linux native)");
+    return CLAW_OK;
+}
+
+void net_print_ipinfo(void)
+{
+    struct ifaddrs *ifaddr, *ifa;
+    int found = 0;
+
+    if (getifaddrs(&ifaddr) == -1) {
+        printf("  (getifaddrs failed)\n");
+        return;
+    }
+
+    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+        if (!ifa->ifa_addr ||
+            ifa->ifa_addr->sa_family != AF_INET) {
+            continue;
+        }
+        if (ifa->ifa_flags & IFF_LOOPBACK) {
+            continue;
+        }
+
+        char addr[INET_ADDRSTRLEN];
+        struct sockaddr_in *sa =
+            (struct sockaddr_in *)ifa->ifa_addr;
+        inet_ntop(AF_INET, &sa->sin_addr,
+                  addr, sizeof(addr));
+
+        char mask[INET_ADDRSTRLEN];
+        struct sockaddr_in *nm =
+            (struct sockaddr_in *)ifa->ifa_netmask;
+        inet_ntop(AF_INET, &nm->sin_addr,
+                  mask, sizeof(mask));
+
+        printf("  %s:\n", ifa->ifa_name);
+        printf("    ip:      %s\n", addr);
+        printf("    netmask: %s\n", mask);
+        found = 1;
+    }
+    freeifaddrs(ifaddr);
+
+    if (!found) {
+        printf("  (no non-loopback IPv4 address)\n");
+    }
+}
+
 #else /* unknown platform */
 
 #include <stdio.h>
