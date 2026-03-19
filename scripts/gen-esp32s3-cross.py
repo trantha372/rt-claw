@@ -66,8 +66,8 @@ def main():
     strip_bin = compiler.replace('-gcc', '-strip')
 
     """ Extract include paths (ESP-IDF / managed_components / build config) """
-    all_includes += re.findall(r'-isystem\s+(\S+)', cmd)
     all_includes = re.findall(r'-I(\S+)', cmd)
+    all_includes += re.findall(r'-isystem\s+(\S+)', cmd)
     project_src_dirs = {'rt-claw/src', 'rt-claw/osal', 'rt-claw/vendor'}
     idf_includes = []
     for p in all_includes:
