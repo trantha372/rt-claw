@@ -528,8 +528,8 @@ void claw_free(void *ptr)
 
 /* ---------- Log ---------- */
 
-static int s_log_enabled = 1;
-static int s_log_level = CLAW_LOG_DEBUG;
+static int s_log_enabled;  /* default 0: logs off */
+static int s_log_level = CLAW_LOG_INFO;
 
 void claw_log_set_enabled(int enabled)
 {
