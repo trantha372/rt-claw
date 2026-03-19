@@ -28,7 +28,7 @@
 #include "esp_mac.h"
 #include "lwip/dns.h"
 
-static claw_sem_t s_got_ip_sem;
+static struct claw_sem *s_got_ip_sem;
 static esp_netif_t *s_eth_netif;
 
 static void eth_event_handler(void *arg, esp_event_base_t event_base,

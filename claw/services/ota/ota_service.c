@@ -23,7 +23,7 @@
 
 #define TAG "ota"
 
-static claw_thread_t s_check_thread;
+static struct claw_thread *s_check_thread;
 
 /* Accessed from OTA worker thread and main thread */
 static volatile Claw_OtaState s_state = CLAW_OTA_IDLE;

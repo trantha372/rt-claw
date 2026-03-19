@@ -67,16 +67,16 @@ static char s_app_secret[FEISHU_CRED_MAX];
 /* ------------------------------------------------------------------ */
 
 static char s_token[TOKEN_BUF_SIZE];
-static claw_mutex_t s_lock;
+static struct claw_mutex *s_lock;
 #ifdef CLAW_PLATFORM_ESP_IDF
 static esp_websocket_client_handle_t s_ws_client;
 #elif defined(CLAW_PLATFORM_LINUX)
 static CURL *s_ws_curl;
 #endif
 static volatile int s_ws_connected;
-static claw_thread_t s_ai_thread;
-static claw_thread_t s_out_thread;
-static claw_thread_t s_main_thread;
+static struct claw_thread *s_ai_thread;
+static struct claw_thread *s_out_thread;
+static struct claw_thread *s_main_thread;
 
 /* Event dedup ring buffer — drop events already processed */
 #define DEDUP_SLOTS  8
@@ -653,8 +653,8 @@ typedef struct {
     char *text;              /* heap-allocated, consumer frees */
 } feishu_outbound_t;
 
-static claw_mq_t s_inbound_q;
-static claw_mq_t s_outbound_q;
+static struct claw_mq *s_inbound_q;
+static struct claw_mq *s_outbound_q;
 
 /* ---- Outbound dispatch thread ---- */
 

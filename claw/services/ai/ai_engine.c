@@ -77,12 +77,12 @@ struct ai_request {
     char            channel_hint[512];
     ai_status_cb_t  status_cb;
     int             raw;           /* 0 = ai_chat, 1 = ai_chat_raw */
-    claw_sem_t      done;
+    struct claw_sem *done;
     int             result;
 };
 
-static claw_mq_t s_ai_queue;
-static claw_thread_t s_worker_thread;
+static struct claw_mq *s_ai_queue;
+static struct claw_thread *s_worker_thread;
 
 /* Worker-local active callback (set per request) */
 static ai_status_cb_t s_active_cb;

@@ -46,7 +46,7 @@ struct gw_handler {
 struct gw_service_entry {
     const char *name;
     uint8_t type_mask;          /* (1 << GW_MSG_*) bitmap */
-    claw_mq_t inbox;            /* service's own message queue */
+    struct claw_mq *inbox;            /* service's own message queue */
 };
 
 #define GW_MAX_HANDLERS     8
@@ -79,6 +79,6 @@ int gateway_register_handler(const char *name, gw_handler_fn process);
  * @param inbox      Service's message queue (gateway delivers to it)
  */
 int gateway_register_service(const char *name, uint8_t type_mask,
-                             claw_mq_t inbox);
+                             struct claw_mq *inbox);
 
 #endif /* CLAW_CORE_GATEWAY_H */

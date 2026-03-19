@@ -41,7 +41,7 @@ static struct gw_service_entry s_services[GW_MAX_SERVICES];
 static int s_service_count;
 
 int gateway_register_service(const char *name, uint8_t type_mask,
-                             claw_mq_t inbox)
+                             struct claw_mq *inbox)
 {
     if (s_service_count >= GW_MAX_SERVICES) {
         CLAW_LOGE(TAG, "service registry full");
@@ -116,8 +116,8 @@ static void dispatch_msg(struct gateway_msg *msg)
 
 /* --- Gateway thread --- */
 
-static claw_mq_t gw_mq;
-static claw_thread_t s_gw_thread;
+static struct claw_mq *gw_mq;
+static struct claw_thread *s_gw_thread;
 
 static void gateway_thread_entry(void *param)
 {

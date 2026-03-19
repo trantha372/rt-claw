@@ -33,7 +33,7 @@
 
 static struct swarm_node nodes[CLAW_SWARM_MAX_NODES];
 static int node_count;
-static claw_mutex_t swarm_lock;
+static struct claw_mutex *swarm_lock;
 static uint32_t s_self_id;
 
 /* Node ID generation — platform-specific hardware identity */
@@ -100,12 +100,12 @@ static uint32_t generate_node_id(void)
     defined(CLAW_PLATFORM_LINUX)
 
 static int s_sock = -1;
-static claw_timer_t s_hb_timer;
-static claw_thread_t s_rx_thread;
+static struct claw_timer *s_hb_timer;
+static struct claw_thread *s_rx_thread;
 
 /* --- RPC state --- */
-static claw_sem_t   s_rpc_sem;
-static claw_mutex_t s_rpc_lock;
+static struct claw_sem *s_rpc_sem;
+static struct claw_mutex *s_rpc_lock;
 static uint16_t     s_rpc_seq;
 static uint16_t     s_rpc_pending_seq;
 static char         s_rpc_result[SWARM_RPC_PAYLOAD_MAX];

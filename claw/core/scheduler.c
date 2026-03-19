@@ -25,8 +25,8 @@ typedef struct {
 } sched_task_t;
 
 static sched_task_t s_tasks[CLAW_SCHED_MAX_TASKS];
-static claw_mutex_t s_lock;
-static claw_thread_t s_thread;
+static struct claw_mutex *s_lock;
+static struct claw_thread *s_thread;
 
 static void sched_thread(void *arg)
 {

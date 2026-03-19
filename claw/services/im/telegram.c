@@ -64,11 +64,11 @@
 static char s_bot_token[BOT_TOKEN_MAX];
 static char s_api_base[API_BASE_MAX];
 static int64_t s_update_offset;
-static claw_mq_t s_inbound_q;
-static claw_mq_t s_outbound_q;
-static claw_thread_t s_ai_thread;
-static claw_thread_t s_out_thread;
-static claw_thread_t s_poll_thread;
+static struct claw_mq *s_inbound_q;
+static struct claw_mq *s_outbound_q;
+static struct claw_thread *s_ai_thread;
+static struct claw_thread *s_out_thread;
+static struct claw_thread *s_poll_thread;
 
 /* ------------------------------------------------------------------ */
 /*  Message structures                                                 */
