@@ -11,6 +11,7 @@
 #include "osal/claw_os.h"
 #include "claw/services/ai/ai_engine.h"
 #include "claw/shell/shell_commands.h"
+#include "claw/shell/shell_history.h"
 #include "claw_board.h"
 
 #ifdef CONFIG_RTCLAW_SKILL_ENABLE
@@ -125,15 +126,53 @@ static void find_completions(const char *prefix, int prefix_len,
 #endif
 }
 
-/* ---- Line reader with tab completion ---- */
+/* ---- Line editing helpers ---- */
+
+static void linux_redraw_tail(const char *buf, int len, int cursor)
+{
+    int tail = len - cursor;
+    if (tail > 0) {
+        write(STDOUT_FILENO, buf + cursor, tail);
+    }
+    write(STDOUT_FILENO, " ", 1);
+    for (int i = 0; i < tail + 1; i++) {
+        write(STDOUT_FILENO, "\b", 1);
+    }
+}
+
+static void linux_line_replace(char *buf, int *len, int *cursor,
+                               const char *text)
+{
+    while (*cursor > 0) {
+        write(STDOUT_FILENO, "\b", 1);
+        (*cursor)--;
+    }
+    for (int i = 0; i < *len; i++) {
+        write(STDOUT_FILENO, " ", 1);
+    }
+    for (int i = 0; i < *len; i++) {
+        write(STDOUT_FILENO, "\b", 1);
+    }
+    int nlen = (int)strlen(text);
+    if (nlen >= INPUT_SIZE) {
+        nlen = INPUT_SIZE - 1;
+    }
+    memcpy(buf, text, nlen);
+    buf[nlen] = '\0';
+    *len = nlen;
+    *cursor = nlen;
+    write(STDOUT_FILENO, buf, nlen);
+}
+
+/* ---- Line reader with tab completion, cursor, history ---- */
 
 static int shell_read_line(char *buf, int size)
 {
     int len = 0;
+    int cursor = 0;
     unsigned char ch;
 
     if (!isatty(STDIN_FILENO)) {
-        /* Pipe/redirect: use fgets fallback */
         if (!fgets(buf, size, stdin)) {
             return -1;
         }
@@ -172,14 +211,13 @@ static int shell_read_line(char *buf, int size)
                 find_completions(buf, len,
                                  &match, &match_count);
                 if (match_count == 1 && match) {
+                    linux_line_replace(buf, &len, &cursor,
+                                       "");
                     int mlen = (int)strlen(match);
-                    /* Erase current input */
-                    for (int i = 0; i < len; i++) {
-                        write(STDOUT_FILENO, "\b \b", 3);
-                    }
                     memcpy(buf, match, mlen);
                     buf[mlen] = ' ';
                     len = mlen + 1;
+                    cursor = len;
                     write(STDOUT_FILENO, buf, len);
                 }
             }
@@ -188,32 +226,111 @@ static int shell_read_line(char *buf, int size)
 
         /* Backspace */
         if (ch == 127 || ch == '\b') {
-            if (len > 0) {
+            if (cursor > 0) {
+                memmove(buf + cursor - 1, buf + cursor,
+                        len - cursor);
+                cursor--;
                 len--;
-                write(STDOUT_FILENO, "\b \b", 3);
+                write(STDOUT_FILENO, "\b", 1);
+                linux_redraw_tail(buf, len, cursor);
             }
             continue;
         }
 
-        /* Escape sequences — consume and ignore */
+        /* Escape sequences */
         if (ch == 0x1b) {
             unsigned char seq[2];
-            read(STDIN_FILENO, &seq[0], 1);
-            if (seq[0] == '[') {
-                read(STDIN_FILENO, &seq[1], 1);
-                /* Numeric: ESC [ digit ~ */
-                if (seq[1] >= '0' && seq[1] <= '9') {
-                    unsigned char tilde;
-                    read(STDIN_FILENO, &tilde, 1);
+            if (read(STDIN_FILENO, &seq[0], 1) <= 0) {
+                continue;
+            }
+            if (seq[0] != '[') {
+                continue;
+            }
+            if (read(STDIN_FILENO, &seq[1], 1) <= 0) {
+                continue;
+            }
+
+            /* Numeric: ESC [ digit ~ */
+            if (seq[1] >= '0' && seq[1] <= '9') {
+                unsigned char tilde;
+                read(STDIN_FILENO, &tilde, 1);
+                if (seq[1] == '3' && tilde == '~') {
+                    /* Delete key */
+                    if (cursor < len) {
+                        memmove(buf + cursor,
+                                buf + cursor + 1,
+                                len - cursor - 1);
+                        len--;
+                        linux_redraw_tail(buf, len, cursor);
+                    }
                 }
+                continue;
+            }
+
+            switch (seq[1]) {
+            case 'A': { /* Up — older history */
+                buf[len] = '\0';
+                const char *h =
+                    shell_history_navigate(-1, buf);
+                if (h) {
+                    linux_line_replace(buf, &len,
+                                       &cursor, h);
+                }
+                break;
+            }
+            case 'B': { /* Down — newer history */
+                buf[len] = '\0';
+                const char *h =
+                    shell_history_navigate(1, buf);
+                if (h) {
+                    linux_line_replace(buf, &len,
+                                       &cursor, h);
+                }
+                break;
+            }
+            case 'C': /* Right */
+                if (cursor < len) {
+                    cursor++;
+                    write(STDOUT_FILENO, "\033[C", 3);
+                }
+                break;
+            case 'D': /* Left */
+                if (cursor > 0) {
+                    cursor--;
+                    write(STDOUT_FILENO, "\033[D", 3);
+                }
+                break;
+            case 'H': /* Home */
+                while (cursor > 0) {
+                    cursor--;
+                    write(STDOUT_FILENO, "\033[D", 3);
+                }
+                break;
+            case 'F': /* End */
+                while (cursor < len) {
+                    cursor++;
+                    write(STDOUT_FILENO, "\033[C", 3);
+                }
+                break;
+            default:
+                break;
             }
             continue;
         }
 
-        /* Printable character */
+        /* Printable character — insert at cursor */
         if (ch >= 32) {
-            buf[len++] = (char)ch;
+            if (cursor < len) {
+                memmove(buf + cursor + 1, buf + cursor,
+                        len - cursor);
+            }
+            buf[cursor] = (char)ch;
+            len++;
+            cursor++;
             write(STDOUT_FILENO, &ch, 1);
+            if (cursor < len) {
+                linux_redraw_tail(buf, len, cursor);
+            }
         }
     }
 
@@ -407,6 +524,7 @@ void linux_shell_loop(void)
     printf("\n");
 
     while (!g_exit_flag) {
+        shell_history_reset_nav();
         printf("\n" CLR_CYAN "you> " CLR_RESET);
         fflush(stdout);
 
@@ -417,6 +535,8 @@ void linux_shell_loop(void)
         if (len == 0) {
             continue;
         }
+
+        shell_history_add(input);
 
         if (input[0] == '/') {
             /* Cooked mode for command output */

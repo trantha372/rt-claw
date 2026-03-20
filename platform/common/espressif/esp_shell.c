@@ -14,6 +14,7 @@
 #include "osal/claw_os.h"
 #include "claw/services/ai/ai_engine.h"
 #include "claw/shell/shell_commands.h"
+#include "claw/shell/shell_history.h"
 #include "claw_board.h"
 #include "drivers/serial/espressif/console.h"
 
@@ -49,6 +50,37 @@ static void redraw_from(const char *buf, int len, int cursor)
     for (int i = 0; i < tail + 1; i++) {
         claw_console_write("\b", 1);
     }
+}
+
+/*
+ * Replace the entire line buffer with `text`.
+ * Clears the visible line, copies text, redraws.
+ */
+static void line_replace(char *buf, int *len, int *cursor,
+                         const char *text)
+{
+    /* Move cursor to start */
+    while (*cursor > 0) {
+        claw_console_write("\b", 1);
+        (*cursor)--;
+    }
+    /* Overwrite visible chars with spaces */
+    for (int i = 0; i < *len; i++) {
+        claw_console_write(" ", 1);
+    }
+    for (int i = 0; i < *len; i++) {
+        claw_console_write("\b", 1);
+    }
+    /* Fill in new content */
+    int nlen = (int)strlen(text);
+    if (nlen >= INPUT_SIZE) {
+        nlen = INPUT_SIZE - 1;
+    }
+    memcpy(buf, text, nlen);
+    buf[nlen] = '\0';
+    *len = nlen;
+    *cursor = nlen;
+    claw_console_write(buf, nlen);
 }
 
 /* Forward declaration */
@@ -193,6 +225,22 @@ static int shell_read_line(char *buf, int size)
             }
 
             switch (seq[1]) {
+            case 'A': { /* Up arrow — older history */
+                buf[len] = '\0';
+                const char *h = shell_history_navigate(-1, buf);
+                if (h) {
+                    line_replace(buf, &len, &cursor, h);
+                }
+                break;
+            }
+            case 'B': { /* Down arrow — newer history */
+                buf[len] = '\0';
+                const char *h = shell_history_navigate(1, buf);
+                if (h) {
+                    line_replace(buf, &len, &cursor, h);
+                }
+                break;
+            }
             case 'D': /* Left arrow — UTF-8 aware */
                 if (cursor > 0) {
                     int skip = 1;
@@ -543,6 +591,7 @@ void esp_shell_loop(void)
     printf("\n");
 
     while (1) {
+        shell_history_reset_nav();
         printf("\n" CLR_CYAN "you> " CLR_RESET);
         fflush(stdout);
         int len = shell_read_line(input, sizeof(input));
@@ -550,6 +599,8 @@ void esp_shell_loop(void)
         if (len == 0) {
             continue;
         }
+
+        shell_history_add(input);
 
         if (input[0] == '/') {
             dispatch_command(input);
