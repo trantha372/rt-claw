@@ -302,17 +302,24 @@ static void dispatch_command(char *line)
 
 #ifdef CONFIG_RTCLAW_SKILL_ENABLE
     {
-        char *skill_reply = claw_malloc(SKILL_REPLY_SIZE);
-        if (skill_reply &&
-            ai_skill_try_command(argv[0], argc, argv,
-                                skill_reply,
-                                SKILL_REPLY_SIZE) == CLAW_OK) {
-            printf("\n" CLR_GREEN "rt-claw> " CLR_RESET
-                   "%s\n", skill_reply);
-            claw_free(skill_reply);
+        const char *sname = argv[0];
+        if (sname[0] == '/') {
+            sname++;
+        }
+        if (ai_skill_find(sname)) {
+            char *skill_reply = claw_malloc(SKILL_REPLY_SIZE);
+            if (skill_reply) {
+                if (ai_skill_try_command(argv[0], argc, argv,
+                                         skill_reply,
+                                         SKILL_REPLY_SIZE)
+                        == CLAW_OK) {
+                    printf("\n" CLR_GREEN "rt-claw> " CLR_RESET
+                           "%s\n", skill_reply);
+                }
+                claw_free(skill_reply);
+            }
             return;
         }
-        claw_free(skill_reply);
     }
 #endif
 
