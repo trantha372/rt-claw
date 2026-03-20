@@ -218,6 +218,18 @@ static int shell_read_line(char *buf, int size)
     }
 
     buf[len] = '\0';
+
+    /* Drain remaining input until newline when buffer is full */
+    if (len >= size - 1) {
+        unsigned char discard;
+        while (read(STDIN_FILENO, &discard, 1) > 0) {
+            if (discard == '\r' || discard == '\n') {
+                break;
+            }
+        }
+        write(STDOUT_FILENO, "\r\n", 2);
+    }
+
     return len;
 }
 
@@ -395,7 +407,7 @@ void linux_shell_loop(void)
     printf("\n");
 
     while (!g_exit_flag) {
-        printf("\n" CLR_CYAN "<You> " CLR_RESET);
+        printf("\n" CLR_CYAN "rt-claw chat> " CLR_RESET);
         fflush(stdout);
 
         int len = shell_read_line(input, sizeof(input));
