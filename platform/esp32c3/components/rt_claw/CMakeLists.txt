@@ -51,6 +51,7 @@ idf_component_register(
 )
 
 target_compile_definitions(${COMPONENT_LIB} PUBLIC CLAW_PLATFORM_ESP_IDF)
+target_compile_options(${COMPONENT_LIB} PRIVATE -Werror)
 
 # Merge Meson pre-built objects into the component library so they
 # participate in ESP-IDF's normal link group (resolves cross-references).
