@@ -63,7 +63,7 @@ execute_process(
 if(_GIT_RC EQUAL 0)
     string(REGEX REPLACE "^v" "" _GIT_VERSION "${_GIT_VERSION}")
     target_compile_definitions(${COMPONENT_LIB} PUBLIC
-        RT_CLAW_VERSION="${_GIT_VERSION}")
+        RT_CLAW_VERSION=\"${_GIT_VERSION}\")
 endif()
 
 # Merge Meson pre-built objects into the component library so they
