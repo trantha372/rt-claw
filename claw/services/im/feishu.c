@@ -502,7 +502,6 @@ static int refresh_token(struct feishu_ctx *ctx)
              "{\"app_id\":\"%s\",\"app_secret\":\"%s\"}",
              ctx->app_id, ctx->app_secret);
 
-    CLAW_LOGW(TAG, "token req body: %s", body);
     int ret = http_post_json(TOKEN_URL, NULL, body, resp, RESP_BUF_SIZE);
     if (ret != CLAW_OK) {
         claw_free(resp);
@@ -1321,7 +1320,7 @@ static claw_err_t feishu_svc_init(struct claw_service *svc)
     }
 
     if (ctx->app_id[0] == '\0' || ctx->app_secret[0] == '\0') {
-        CLAW_LOGE(TAG, "no credentials configured");
+        CLAW_LOGW(TAG, "no credentials, service disabled");
         return CLAW_ERR_GENERIC;
     }
 

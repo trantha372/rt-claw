@@ -526,7 +526,7 @@ static claw_err_t telegram_svc_init(struct claw_service *svc)
     }
 
     if (ctx->bot_token[0] == '\0') {
-        CLAW_LOGE(TAG, "no bot token configured");
+        CLAW_LOGW(TAG, "no bot token, service disabled");
         return CLAW_ERR_GENERIC;
     }
 

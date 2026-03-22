@@ -211,7 +211,7 @@ claw_err_t claw_service_start_all(void)
         CLAW_LOGI(TAG, "init: %s", svc->name);
         err = svc->ops->init(svc);
         if (err != CLAW_OK) {
-            CLAW_LOGE(TAG, "%s init failed: %s",
+            CLAW_LOGW(TAG, "%s init skipped: %s",
                       svc->name, claw_strerror(err));
             svc->state = CLAW_SVC_STOPPED;
             continue;
