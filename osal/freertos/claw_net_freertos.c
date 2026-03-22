@@ -16,10 +16,40 @@
 
 #include "esp_http_client.h"
 #include "esp_crt_bundle.h"
-
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 
 #define TAG "net_http"
-#define HTTP_TIMEOUT_MS 60000
+#define HTTP_TIMEOUT_MS  60000
+#define MAX_CONCURRENT_TLS  2
+
+/*
+ * Counting semaphore to limit concurrent TLS connections.
+ * ESP32-C3 has ~300KB heap; each TLS session uses ~30-40KB.
+ * Allowing more than 2 simultaneous sessions prevents OOM.
+ */
+static SemaphoreHandle_t s_tls_sem;
+
+static void tls_throttle_init(void)
+{
+    if (!s_tls_sem) {
+        s_tls_sem = xSemaphoreCreateCounting(MAX_CONCURRENT_TLS,
+                                              MAX_CONCURRENT_TLS);
+    }
+}
+
+static void tls_throttle_acquire(void)
+{
+    tls_throttle_init();
+    xSemaphoreTake(s_tls_sem, portMAX_DELAY);
+}
+
+static void tls_throttle_release(void)
+{
+    if (s_tls_sem) {
+        xSemaphoreGive(s_tls_sem);
+    }
+}
 
 typedef struct {
     char   *buf;
@@ -49,6 +79,8 @@ int claw_net_post(const char *url,
                   const char *body, size_t body_len,
                   char *resp, size_t resp_size, size_t *resp_len)
 {
+    tls_throttle_acquire();
+
     resp_ctx_t ctx = { .buf = resp, .size = resp_size, .len = 0 };
     resp[0] = '\0';
 
@@ -65,6 +97,7 @@ int claw_net_post(const char *url,
 
     esp_http_client_handle_t client = esp_http_client_init(&cfg);
     if (!client) {
+        tls_throttle_release();
         return CLAW_ERROR;
     }
 
@@ -80,6 +113,7 @@ int claw_net_post(const char *url,
         status = esp_http_client_get_status_code(client);
     }
     esp_http_client_cleanup(client);
+    tls_throttle_release();
 
     if (err != ESP_OK) {
         CLAW_LOGE(TAG, "HTTP POST failed: %s", esp_err_to_name(err));
@@ -96,6 +130,8 @@ int claw_net_get(const char *url,
                  const claw_net_header_t *headers, int header_count,
                  char *resp, size_t resp_size, size_t *resp_len)
 {
+    tls_throttle_acquire();
+
     resp_ctx_t ctx = { .buf = resp, .size = resp_size, .len = 0 };
     resp[0] = '\0';
 
@@ -111,6 +147,7 @@ int claw_net_get(const char *url,
 
     esp_http_client_handle_t client = esp_http_client_init(&cfg);
     if (!client) {
+        tls_throttle_release();
         return CLAW_ERROR;
     }
 
@@ -125,15 +162,13 @@ int claw_net_get(const char *url,
         status = esp_http_client_get_status_code(client);
     }
     esp_http_client_cleanup(client);
+    tls_throttle_release();
 
     if (err != ESP_OK) {
         CLAW_LOGE(TAG, "HTTP GET failed: %s", esp_err_to_name(err));
         return CLAW_ERROR;
     }
 
-    if (resp_len) {
-        *resp_len = ctx.len;
-    }
     if (resp_len) {
         *resp_len = ctx.len;
     }
