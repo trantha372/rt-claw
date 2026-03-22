@@ -386,14 +386,14 @@ static void cmd_help(int argc, char **argv)
 
 #ifdef CONFIG_RTCLAW_SKILL_ENABLE
     if (ai_skill_count() > 0) {
-        printf("\n  Dynamic skills (invoke as /name [args]):\n");
+        claw_printf("\n  Dynamic skills (invoke as /name [args]):\n");
         for (int i = 0; i < ai_skill_count(); i++) {
-            printf("    /%s\n", ai_skill_get_name(i));
+            claw_printf("    /%s\n", ai_skill_get_name(i));
         }
     }
 #endif
 
-    printf("\n  Anything else is sent directly to AI.\n");
+    claw_printf("\n  Anything else is sent directly to AI.\n");
 }
 
 /* ---- Command dispatch ---- */
@@ -554,6 +554,16 @@ static void do_chat(const char *msg)
 void linux_shell_loop(void)
 {
     char input[INPUT_SIZE];
+
+    /* Register command tables for IM shell_exec_capture() */
+    shell_register_cmd_table(s_builtin_commands,
+                             SHELL_CMD_COUNT(s_builtin_commands));
+    int board_cmd_count = 0;
+    const shell_cmd_t *board_cmds =
+        board_platform_commands(&board_cmd_count);
+    if (board_cmds && board_cmd_count > 0) {
+        shell_register_cmd_table(board_cmds, board_cmd_count);
+    }
 
     s_reply = claw_malloc(REPLY_SIZE);
     if (!s_reply) {

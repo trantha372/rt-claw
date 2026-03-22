@@ -9,6 +9,7 @@
  */
 
 #include "osal/claw_os.h"
+#include "claw/core/console.h"
 #include "claw/services/ai/ai_skill.h"
 #include "claw/services/ai/ai_engine.h"
 #include "claw/tools/claw_tools.h"
@@ -239,7 +240,7 @@ void ai_skill_list(void)
 {
     char buf[512];
     ai_skill_list_to_buf(buf, sizeof(buf));
-    printf("%s", buf);
+    claw_printf("%s", buf);
 }
 
 int ai_skill_count(void)

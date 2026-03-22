@@ -11,6 +11,7 @@
 #include "osal/claw_net.h"
 #include "claw/services/swarm/swarm.h"
 #include "claw/tools/claw_tools.h"
+#include "claw/core/console.h"
 #include "claw/core/claw_service.h"
 #include "utils/list.h"
 #ifdef CONFIG_RTCLAW_HEARTBEAT_ENABLE
@@ -746,9 +747,9 @@ void swarm_list_nodes(void)
 
     claw_mutex_lock(ctx->lock, CLAW_WAIT_FOREVER);
 
-    printf("nodes: %d/%d (self=0x%08x)\n",
-           ctx->node_count, CLAW_SWARM_MAX_NODES,
-           (unsigned)ctx->self_id);
+    claw_printf("nodes: %d/%d (self=0x%08x)\n",
+                ctx->node_count, CLAW_SWARM_MAX_NODES,
+                (unsigned)ctx->self_id);
 
     for (int i = 0; i < CLAW_SWARM_MAX_NODES; i++) {
         if (ctx->nodes[i].state != SWARM_NODE_OFFLINE) {
@@ -756,14 +757,14 @@ void swarm_list_nodes(void)
                 (ctx->nodes[i].id == ctx->self_id) ? "self" :
                 (ctx->nodes[i].state == SWARM_NODE_ONLINE) ?
                     "online" : "disc";
-            printf("  [%d] id=0x%08x  %-6s  cap=0x%02x  "
-                   "load=%d%%  role=%-5s  tasks=%d  up=%us\n",
-                   i, (unsigned)ctx->nodes[i].id, state_str,
-                   ctx->nodes[i].capabilities,
-                   ctx->nodes[i].load,
-                   role_name(ctx->nodes[i].role),
-                   ctx->nodes[i].active_tasks,
-                   (unsigned)ctx->nodes[i].uptime_s);
+            claw_printf("  [%d] id=0x%08x  %-6s  cap=0x%02x  "
+                        "load=%d%%  role=%-5s  tasks=%d  up=%us\n",
+                        i, (unsigned)ctx->nodes[i].id, state_str,
+                        ctx->nodes[i].capabilities,
+                        ctx->nodes[i].load,
+                        role_name(ctx->nodes[i].role),
+                        ctx->nodes[i].active_tasks,
+                        (unsigned)ctx->nodes[i].uptime_s);
         }
     }
 

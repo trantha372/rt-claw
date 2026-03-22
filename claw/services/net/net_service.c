@@ -9,6 +9,7 @@
 #include "osal/claw_os.h"
 #include "claw/services/net/net_service.h"
 #include "claw/core/claw_service.h"
+#include "claw/core/console.h"
 #include "utils/list.h"
 
 #include <string.h>
@@ -199,11 +200,11 @@ void net_print_ipinfo(void)
     if (s_net.eth_netif &&
         esp_netif_get_ip_info(s_net.eth_netif, &info) == ESP_OK &&
         info.ip.addr != 0) {
-        printf("  ip:      " IPSTR "\n", IP2STR(&info.ip));
-        printf("  netmask: " IPSTR "\n", IP2STR(&info.netmask));
-        printf("  gateway: " IPSTR "\n", IP2STR(&info.gw));
+        claw_printf("  ip:      " IPSTR "\n", IP2STR(&info.ip));
+        claw_printf("  netmask: " IPSTR "\n", IP2STR(&info.netmask));
+        claw_printf("  gateway: " IPSTR "\n", IP2STR(&info.gw));
     } else {
-        printf("  (no IP address)\n");
+        claw_printf("  (no IP address)\n");
     }
 }
 
@@ -232,15 +233,15 @@ void net_print_ipinfo(void)
         if (esp_netif_get_ip_info(netif, &info) == ESP_OK &&
             info.ip.addr != 0) {
             const char *desc = esp_netif_get_desc(netif);
-            printf("  %s:\n", desc ? desc : "netif");
-            printf("    ip:      " IPSTR "\n", IP2STR(&info.ip));
-            printf("    netmask: " IPSTR "\n", IP2STR(&info.netmask));
-            printf("    gateway: " IPSTR "\n", IP2STR(&info.gw));
+            claw_printf("  %s:\n", desc ? desc : "netif");
+            claw_printf("    ip:      " IPSTR "\n", IP2STR(&info.ip));
+            claw_printf("    netmask: " IPSTR "\n", IP2STR(&info.netmask));
+            claw_printf("    gateway: " IPSTR "\n", IP2STR(&info.gw));
             found = 1;
         }
     }
     if (!found) {
-        printf("  (no IP address)\n");
+        claw_printf("  (no IP address)\n");
     }
 }
 
@@ -352,11 +353,11 @@ void net_print_ipinfo(void)
     struct netif *nif = netif_default;
 
     if (nif && nif->ip_addr.addr != 0) {
-        printf("  ip:      %s\n", ip4addr_ntoa(&nif->ip_addr));
-        printf("  netmask: %s\n", ip4addr_ntoa(&nif->netmask));
-        printf("  gateway: %s\n", ip4addr_ntoa(&nif->gw));
+        claw_printf("  ip:      %s\n", ip4addr_ntoa(&nif->ip_addr));
+        claw_printf("  netmask: %s\n", ip4addr_ntoa(&nif->netmask));
+        claw_printf("  gateway: %s\n", ip4addr_ntoa(&nif->gw));
     } else {
-        printf("  (no IP address)\n");
+        claw_printf("  (no IP address)\n");
     }
 }
 
@@ -380,7 +381,7 @@ void net_print_ipinfo(void)
     int found = 0;
 
     if (getifaddrs(&ifaddr) == -1) {
-        printf("  (getifaddrs failed)\n");
+        claw_printf("  (getifaddrs failed)\n");
         return;
     }
 
@@ -405,15 +406,15 @@ void net_print_ipinfo(void)
         inet_ntop(AF_INET, &nm->sin_addr,
                   mask, sizeof(mask));
 
-        printf("  %s:\n", ifa->ifa_name);
-        printf("    ip:      %s\n", addr);
-        printf("    netmask: %s\n", mask);
+        claw_printf("  %s:\n", ifa->ifa_name);
+        claw_printf("    ip:      %s\n", addr);
+        claw_printf("    netmask: %s\n", mask);
         found = 1;
     }
     freeifaddrs(ifaddr);
 
     if (!found) {
-        printf("  (no non-loopback IPv4 address)\n");
+        claw_printf("  (no non-loopback IPv4 address)\n");
     }
 }
 
@@ -430,7 +431,7 @@ static claw_err_t net_platform_init(struct net_service_ctx *ctx)
 
 void net_print_ipinfo(void)
 {
-    printf("  (not available on this platform)\n");
+    claw_printf("  (not available on this platform)\n");
 }
 
 #endif

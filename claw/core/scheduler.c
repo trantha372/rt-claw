@@ -8,6 +8,7 @@
 #include "osal/claw_os.h"
 #include "claw_config.h"
 #include "claw/core/scheduler.h"
+#include "claw/core/console.h"
 #include "utils/list.h"
 
 #include <string.h>
@@ -238,14 +239,15 @@ void sched_list(void)
 {
     claw_mutex_lock(s_lock, CLAW_WAIT_FOREVER);
 
-    printf("tasks: %d\n", s_task_count);
+    claw_printf("tasks: %d\n", s_task_count);
 
     claw_list_node_t *pos;
 
     claw_list_for_each(pos, &s_tasks) {
         sched_task_t *t = claw_list_entry(pos, sched_task_t, node);
-        printf("  %-20s  every %5ums  remaining=%d\n",
-               t->name, (unsigned)t->interval_ms, (int)t->remaining);
+        claw_printf("  %-20s  every %5ums  remaining=%d\n",
+                     t->name, (unsigned)t->interval_ms,
+                     (int)t->remaining);
     }
 
     claw_mutex_unlock(s_lock);

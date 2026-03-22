@@ -9,6 +9,7 @@
 #include "claw_config.h"
 #include "claw/services/ai/ai_engine.h"
 #include "claw/services/ai/ai_memory.h"
+#include "claw/core/console.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -344,11 +345,11 @@ int ai_ltm_delete(const char *key)
 
 void ai_ltm_list(void)
 {
-    printf("long-term memory: %d/%d entries\n",
-           s_ltm_count, LTM_MAX_ENTRIES);
+    claw_printf("long-term memory: %d/%d entries\n",
+                 s_ltm_count, LTM_MAX_ENTRIES);
     for (int i = 0; i < s_ltm_count; i++) {
-        printf("  [%d] %-24s = %.60s\n", i,
-               s_ltm[i].key, s_ltm[i].value);
+        claw_printf("  [%d] %-24s = %.60s\n", i,
+                     s_ltm[i].key, s_ltm[i].value);
     }
 }
 

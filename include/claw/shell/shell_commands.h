@@ -28,10 +28,18 @@ void shell_nvs_config_load(void);
 void shell_nvs_save_str(const char *ns, const char *key, const char *val);
 
 /**
- * Execute a shell command by name and capture printf output into buf.
- * Searches shell_common_commands table.
+ * Register an extra command table for shell_exec_capture() to search.
+ * Call from platform shell init (e.g. esp_shell, linux shell) so that
+ * IM-dispatched /commands can find platform-specific and board commands.
+ * Up to 4 extra tables can be registered.
+ */
+void shell_register_cmd_table(const shell_cmd_t *table, int count);
+
+/**
+ * Execute a shell command by name and capture claw_printf output into buf.
+ * Searches all registered tables + shell_common_commands.
  * Returns CLAW_OK if command found and executed, CLAW_ERR_NOENT otherwise.
- * buf will contain the captured stdout output (NUL-terminated).
+ * buf will contain the captured output (NUL-terminated, ANSI stripped).
  */
 int shell_exec_capture(const char *cmd_name, int argc, char **argv,
                        char *buf, size_t buf_size);

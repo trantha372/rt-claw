@@ -35,108 +35,12 @@
 
 #include "osal/claw_kv.h"
 
-#include <stdarg.h>
-
-/* ---- shell_printf / capture mechanism ---- */
-
-static struct {
-    char  *buf;
-    size_t size;
-    size_t pos;
-} s_capture;
-
-static struct claw_mutex *s_capture_lock;
-
-static void capture_init_once(void)
-{
-    if (!s_capture_lock) {
-        s_capture_lock = claw_mutex_create("sh_cap");
-    }
-}
-
-void shell_capture_start(char *buf, size_t size)
-{
-    capture_init_once();
-    claw_mutex_lock(s_capture_lock, CLAW_WAIT_FOREVER);
-    s_capture.buf = buf;
-    s_capture.size = size;
-    s_capture.pos = 0;
-    if (buf && size > 0) {
-        buf[0] = '\0';
-    }
-}
-
-size_t shell_capture_stop(void)
-{
-    size_t n = s_capture.pos;
-    s_capture.buf = NULL;
-    s_capture.size = 0;
-    s_capture.pos = 0;
-    if (s_capture_lock) {
-        claw_mutex_unlock(s_capture_lock);
-    }
-    return n;
-}
-
-/* Strip ANSI escape sequences (e.g. \033[0;31m) from src into dst */
-static size_t strip_ansi(const char *src, size_t src_len,
-                         char *dst, size_t dst_size)
-{
-    size_t di = 0;
-    size_t si = 0;
-
-    while (si < src_len && di < dst_size - 1) {
-        if (src[si] == '\033' && si + 1 < src_len && src[si + 1] == '[') {
-            si += 2;
-            while (si < src_len && src[si] != 'm') {
-                si++;
-            }
-            if (si < src_len) {
-                si++;  /* skip 'm' */
-            }
-        } else {
-            dst[di++] = src[si++];
-        }
-    }
-    dst[di] = '\0';
-    return di;
-}
-
-int shell_printf(const char *fmt, ...)
-{
-    va_list ap;
-    int ret;
-
-    /* Always print to stdout (serial console) */
-    va_start(ap, fmt);
-    ret = vprintf(fmt, ap);
-    va_end(ap);
-
-    /* Also append to capture buffer if active */
-    if (s_capture.buf && s_capture.pos < s_capture.size - 1) {
-        char tmp[512];
-        va_start(ap, fmt);
-        int n = vsnprintf(tmp, sizeof(tmp), fmt, ap);
-        va_end(ap);
-
-        if (n > 0) {
-            size_t avail = s_capture.size - 1 - s_capture.pos;
-            size_t written = strip_ansi(tmp, (size_t)n,
-                                        s_capture.buf + s_capture.pos,
-                                        avail + 1);
-            s_capture.pos += written;
-        }
-    }
-
-    return ret;
-}
-
 /* ---- KV persistence (platform-independent via OSAL) ---- */
 
 void shell_nvs_save_str(const char *ns, const char *key, const char *val)
 {
     if (claw_kv_set_str(ns, key, val) != CLAW_OK) {
-        shell_printf("[error] KV save failed\n");
+        claw_printf("[error] KV save failed\n");
     }
 }
 
@@ -198,7 +102,7 @@ static void cmd_log(int argc, char **argv)
         claw_log_set_enabled(0);
     } else if (strcmp(argv[1], "level") == 0) {
         if (argc < 3) {
-            shell_printf("Log level: %s\n",
+            claw_printf("Log level: %s\n",
                    log_level_name(claw_log_get_level()));
             return;
         }
@@ -213,17 +117,17 @@ static void cmd_log(int argc, char **argv)
             lv = CLAW_LOG_DEBUG;
         }
         if (lv < 0) {
-            shell_printf("Usage: /log level <error|warn|info|debug>\n");
+            claw_printf("Usage: /log level <error|warn|info|debug>\n");
             return;
         }
         claw_log_set_level(lv);
-        shell_printf("Log level: %s\n", log_level_name(lv));
+        claw_printf("Log level: %s\n", log_level_name(lv));
         return;
     } else {
-        shell_printf("Usage: /log [on|off|level <error|warn|info|debug>]\n");
+        claw_printf("Usage: /log [on|off|level <error|warn|info|debug>]\n");
         return;
     }
-    shell_printf("Log output: %s\n",
+    claw_printf("Log output: %s\n",
            claw_log_get_enabled() ? "ON" : "OFF");
 }
 
@@ -231,7 +135,7 @@ static void cmd_history(int argc, char **argv)
 {
     (void)argc;
     (void)argv;
-    shell_printf("Conversation memory: %d messages\n", ai_memory_count());
+    claw_printf("Conversation memory: %d messages\n", ai_memory_count());
 }
 
 static void cmd_clear(int argc, char **argv)
@@ -239,13 +143,13 @@ static void cmd_clear(int argc, char **argv)
     (void)argc;
     (void)argv;
     ai_memory_clear();
-    shell_printf("Conversation memory cleared.\n");
+    claw_printf("Conversation memory cleared.\n");
 }
 
 static void cmd_ai_set(int argc, char **argv)
 {
     if (argc < 3) {
-        shell_printf("Usage: /ai_set key|url|model <value>\n");
+        claw_printf("Usage: /ai_set key|url|model <value>\n");
         return;
     }
 
@@ -255,17 +159,17 @@ static void cmd_ai_set(int argc, char **argv)
     if (strcmp(field, "key") == 0) {
         ai_set_api_key(value);
         shell_nvs_save_str(SHELL_NVS_NS_AI, "api_key", value);
-        shell_printf("API key saved (effective immediately).\n");
+        claw_printf("API key saved (effective immediately).\n");
     } else if (strcmp(field, "url") == 0) {
         ai_set_api_url(value);
         shell_nvs_save_str(SHELL_NVS_NS_AI, "api_url", value);
-        shell_printf("API URL saved: %s\n", value);
+        claw_printf("API URL saved: %s\n", value);
     } else if (strcmp(field, "model") == 0) {
         ai_set_model(value);
         shell_nvs_save_str(SHELL_NVS_NS_AI, "model", value);
-        shell_printf("Model saved: %s\n", value);
+        claw_printf("Model saved: %s\n", value);
     } else {
-        shell_printf("Unknown field: %s (use key|url|model)\n", field);
+        claw_printf("Unknown field: %s (use key|url|model)\n", field);
     }
 }
 
@@ -276,18 +180,18 @@ static void cmd_ai_status(int argc, char **argv)
 
     (void)argc;
     (void)argv;
-    shell_printf("AI Engine:\n");
-    shell_printf("  API Key: %s\n",
+    claw_printf("AI Engine:\n");
+    claw_printf("  API Key: %s\n",
            klen == 0 ? "(not set)" :
            klen <= 8 ? "****" : "****...****");
-    shell_printf("  API URL: %s\n", ai_get_api_url());
-    shell_printf("  Model:   %s\n", ai_get_model());
+    claw_printf("  API URL: %s\n", ai_get_api_url());
+    claw_printf("  Model:   %s\n", ai_get_model());
 }
 
 static void cmd_feishu_set(int argc, char **argv)
 {
     if (argc < 3) {
-        shell_printf("Usage: /feishu_set <app_id> <app_secret>\n");
+        claw_printf("Usage: /feishu_set <app_id> <app_secret>\n");
         return;
     }
 
@@ -295,7 +199,7 @@ static void cmd_feishu_set(int argc, char **argv)
     feishu_set_app_secret(argv[2]);
     shell_nvs_save_str(SHELL_NVS_NS_FEISHU, "app_id", argv[1]);
     shell_nvs_save_str(SHELL_NVS_NS_FEISHU, "app_secret", argv[2]);
-    shell_printf("Feishu credentials saved (reboot to apply).\n");
+    claw_printf("Feishu credentials saved (reboot to apply).\n");
 }
 
 static void cmd_feishu_status(int argc, char **argv)
@@ -304,23 +208,23 @@ static void cmd_feishu_status(int argc, char **argv)
 
     (void)argc;
     (void)argv;
-    shell_printf("Feishu:\n");
-    shell_printf("  App ID:     %s\n", id[0] ? id : "(not set)");
-    shell_printf("  App Secret: %s\n",
+    claw_printf("Feishu:\n");
+    claw_printf("  App ID:     %s\n", id[0] ? id : "(not set)");
+    claw_printf("  App Secret: %s\n",
            feishu_get_app_secret()[0] ? "****" : "(not set)");
 }
 
 static void cmd_telegram_set(int argc, char **argv)
 {
     if (argc < 2) {
-        shell_printf("Usage: /telegram_set <bot_token>\n");
+        claw_printf("Usage: /telegram_set <bot_token>\n");
         return;
     }
 
     telegram_set_bot_token(argv[1]);
     shell_nvs_save_str(SHELL_NVS_NS_TELEGRAM, "bot_token",
                        argv[1]);
-    shell_printf("Telegram token saved (reboot to apply).\n");
+    claw_printf("Telegram token saved (reboot to apply).\n");
 }
 
 static void cmd_telegram_status(int argc, char **argv)
@@ -329,15 +233,15 @@ static void cmd_telegram_status(int argc, char **argv)
     (void)argv;
     const char *tok = telegram_get_bot_token();
 
-    shell_printf("Telegram:\n");
-    shell_printf("  Bot token: %s\n",
+    claw_printf("Telegram:\n");
+    claw_printf("  Bot token: %s\n",
            tok[0] ? "****" : "(not set)");
 }
 
 static void cmd_remember(int argc, char **argv)
 {
     if (argc < 3) {
-        shell_printf("Usage: /remember <key> <value...>\n");
+        claw_printf("Usage: /remember <key> <value...>\n");
         return;
     }
 
@@ -353,23 +257,23 @@ static void cmd_remember(int argc, char **argv)
     }
 
     if (ai_ltm_save(argv[1], value) == CLAW_OK) {
-        shell_printf("Remembered: %s = %s\n", argv[1], value);
+        claw_printf("Remembered: %s = %s\n", argv[1], value);
     } else {
-        shell_printf("[error] failed to save\n");
+        claw_printf("[error] failed to save\n");
     }
 }
 
 static void cmd_forget(int argc, char **argv)
 {
     if (argc < 2) {
-        shell_printf("Usage: /forget <key>\n");
+        claw_printf("Usage: /forget <key>\n");
         return;
     }
 
     if (ai_ltm_delete(argv[1]) == CLAW_OK) {
-        shell_printf("Forgot: %s\n", argv[1]);
+        claw_printf("Forgot: %s\n", argv[1]);
     } else {
-        shell_printf("[error] key '%s' not found\n", argv[1]);
+        claw_printf("[error] key '%s' not found\n", argv[1]);
     }
 }
 
@@ -388,7 +292,7 @@ static void cmd_skills(int argc, char **argv)
     if (argc < 2) {
         char buf[512];
         ai_skill_list_to_buf(buf, sizeof(buf));
-        shell_printf("%s", buf);
+        claw_printf("%s", buf);
         return;
     }
 
@@ -405,15 +309,15 @@ static void cmd_skills(int argc, char **argv)
 
     char *reply = claw_malloc(SKILL_REPLY_SIZE);
     if (!reply) {
-        shell_printf("[error] no memory\n");
+        claw_printf("[error] no memory\n");
         return;
     }
 
     if (ai_skill_execute(argv[1], params,
                          reply, SKILL_REPLY_SIZE) == CLAW_OK) {
-        shell_printf("\n" CLR_GREEN "rt-claw> " CLR_RESET "%s\n", reply);
+        claw_printf("\n" CLR_GREEN "rt-claw> " CLR_RESET "%s\n", reply);
     } else {
-        shell_printf("\n" CLR_RED "error> " CLR_RESET "%s\n", reply);
+        claw_printf("\n" CLR_RED "error> " CLR_RESET "%s\n", reply);
     }
     claw_free(reply);
 }
@@ -428,12 +332,12 @@ static void cmd_task(int argc, char **argv)
     }
     if (strcmp(argv[1], "rm") == 0 && argc >= 3) {
         if (sched_tool_remove_by_name(argv[2]) == CLAW_OK) {
-            shell_printf("task '%s' removed\n", argv[2]);
+            claw_printf("task '%s' removed\n", argv[2]);
         } else {
-            shell_printf("task '%s' not found\n", argv[2]);
+            claw_printf("task '%s' not found\n", argv[2]);
         }
     } else {
-        shell_printf("usage: /task [rm <name>]\n");
+        claw_printf("usage: /task [rm <name>]\n");
     }
 }
 #endif
@@ -451,35 +355,35 @@ static void cmd_nodes(int argc, char **argv)
 static void cmd_ota(int argc, char **argv)
 {
     if (argc < 2) {
-        shell_printf("Usage: /ota check | update [url]\n");
+        claw_printf("Usage: /ota check | update [url]\n");
         return;
     }
 
     if (strcmp(argv[1], "version") == 0) {
-        shell_printf("Running: %s\n", claw_ota_running_version());
+        claw_printf("Running: %s\n", claw_ota_running_version());
     } else if (!claw_ota_supported()) {
-        shell_printf("OTA not supported on this platform.\n");
+        claw_printf("OTA not supported on this platform.\n");
     } else if (strcmp(argv[1], "check") == 0) {
         claw_ota_info_t info;
         int ret = ota_check_update(&info);
         if (ret == 1) {
-            shell_printf("Update available: %s\n", info.version);
-            shell_printf("  URL:  %s\n", info.url);
-            shell_printf("  Size: %lu bytes\n",
+            claw_printf("Update available: %s\n", info.version);
+            claw_printf("  URL:  %s\n", info.url);
+            claw_printf("  Size: %lu bytes\n",
                    (unsigned long)info.size);
-            shell_printf("Run '/ota update' to install.\n");
+            claw_printf("Run '/ota update' to install.\n");
         } else if (ret == 0) {
-            shell_printf("Firmware is up to date (%s).\n",
+            claw_printf("Firmware is up to date (%s).\n",
                    claw_ota_running_version());
         } else {
-            shell_printf("[error] version check failed\n");
+            claw_printf("[error] version check failed\n");
         }
     } else if (strcmp(argv[1], "update") == 0) {
         if (argc >= 3) {
             if (ota_trigger_update(argv[2]) == CLAW_OK) {
-                shell_printf("OTA update started.\n");
+                claw_printf("OTA update started.\n");
             } else {
-                shell_printf("[error] failed to start OTA\n");
+                claw_printf("[error] failed to start OTA\n");
             }
         } else {
             claw_ota_info_t uinfo;
@@ -487,26 +391,26 @@ static void cmd_ota(int argc, char **argv)
             if (ur == 1) {
                 if (ota_trigger_update(uinfo.url)
                         == CLAW_OK) {
-                    shell_printf("Updating to %s ...\n",
+                    claw_printf("Updating to %s ...\n",
                            uinfo.version);
                 } else {
-                    shell_printf("[error] OTA start failed\n");
+                    claw_printf("[error] OTA start failed\n");
                 }
             } else if (ur == 0) {
-                shell_printf("Already up to date (%s).\n",
+                claw_printf("Already up to date (%s).\n",
                        claw_ota_running_version());
             } else {
-                shell_printf("[error] version check failed\n");
+                claw_printf("[error] version check failed\n");
             }
         }
     } else if (strcmp(argv[1], "rollback") == 0) {
         if (claw_ota_rollback() != CLAW_OK) {
-            shell_printf("[error] rollback failed\n");
+            claw_printf("[error] rollback failed\n");
         } else {
-            shell_printf("Rolling back firmware ...\n");
+            claw_printf("Rolling back firmware ...\n");
         }
     } else {
-        shell_printf("Usage: /ota version|check|update|rollback\n");
+        claw_printf("Usage: /ota version|check|update|rollback\n");
     }
 }
 #endif
@@ -515,7 +419,7 @@ static void cmd_ip(int argc, char **argv)
 {
     (void)argc;
     (void)argv;
-    shell_printf("Network:\n");
+    claw_printf("Network:\n");
     net_print_ipinfo();
 }
 
@@ -530,11 +434,11 @@ static void cmd_tools(int argc, char *argv[])
     claw_list_node_t *pos;
     int i = 0;
 
-    shell_printf("Registered tools (%d):\n", claw_tool_core_count());
+    claw_printf("Registered tools (%d):\n", claw_tool_core_count());
     claw_list_for_each(pos, head) {
         struct claw_tool *t = claw_list_entry(pos, struct claw_tool,
                                                node);
-        shell_printf("  %d. %-20s %s\n", ++i, t->name,
+        claw_printf("  %d. %-20s %s\n", ++i, t->name,
                t->description ? t->description : "");
     }
 }
@@ -575,7 +479,46 @@ int shell_common_command_count(void)
     return SHELL_CMD_COUNT(shell_common_commands);
 }
 
+/* ---- Extra command table registry ---- */
+
+#define MAX_EXTRA_TABLES 4
+
+static struct {
+    const shell_cmd_t *table;
+    int count;
+} s_extra_tables[MAX_EXTRA_TABLES];
+static int s_extra_count;
+
+void shell_register_cmd_table(const shell_cmd_t *table, int count)
+{
+    if (s_extra_count < MAX_EXTRA_TABLES && table && count > 0) {
+        s_extra_tables[s_extra_count].table = table;
+        s_extra_tables[s_extra_count].count = count;
+        s_extra_count++;
+    }
+}
+
 /* ---- shell_exec_capture: find + run + capture ---- */
+
+static const shell_cmd_t *find_shell_cmd(const char *name)
+{
+    /* Search extra tables (platform builtins, board commands) */
+    for (int t = 0; t < s_extra_count; t++) {
+        for (int i = 0; i < s_extra_tables[t].count; i++) {
+            if (strcmp(s_extra_tables[t].table[i].name, name) == 0) {
+                return &s_extra_tables[t].table[i];
+            }
+        }
+    }
+    /* Search common commands */
+    int count = SHELL_CMD_COUNT(shell_common_commands);
+    for (int i = 0; i < count; i++) {
+        if (strcmp(shell_common_commands[i].name, name) == 0) {
+            return &shell_common_commands[i];
+        }
+    }
+    return NULL;
+}
 
 int shell_exec_capture(const char *cmd_name, int argc, char **argv,
                        char *buf, size_t buf_size)
@@ -585,22 +528,14 @@ int shell_exec_capture(const char *cmd_name, int argc, char **argv,
     }
     buf[0] = '\0';
 
-    /* Find command in common table */
-    int count = SHELL_CMD_COUNT(shell_common_commands);
-    const shell_cmd_t *cmd = NULL;
-    for (int i = 0; i < count; i++) {
-        if (strcmp(shell_common_commands[i].name, cmd_name) == 0) {
-            cmd = &shell_common_commands[i];
-            break;
-        }
-    }
+    const shell_cmd_t *cmd = find_shell_cmd(cmd_name);
     if (!cmd) {
         return CLAW_ERR_NOENT;
     }
 
-    shell_capture_start(buf, buf_size);
+    claw_printf_capture_start(buf, buf_size);
     cmd->handler(argc, argv);
-    shell_capture_stop();
+    claw_printf_capture_stop();
 
     return CLAW_OK;
 }

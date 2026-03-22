@@ -11,6 +11,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include "claw/core/console.h"
 
 /* ANSI color codes */
 #define CLR_RESET   "\033[0m"
@@ -19,26 +20,6 @@
 #define CLR_YELLOW  "\033[0;33m"
 #define CLR_CYAN    "\033[0;36m"
 #define CLR_MAGENTA "\033[0;35m"
-
-/* ---- Output capture for IM command routing ---- */
-
-/**
- * Start capturing shell_printf output into buf.
- * While active, shell_printf writes to both stdout AND buf.
- * Thread-safe: only one capture can be active at a time.
- */
-void shell_capture_start(char *buf, size_t size);
-
-/** Stop capturing and return bytes written (excluding NUL). */
-size_t shell_capture_stop(void);
-
-/**
- * Printf wrapper used by all shell commands.
- * Writes to stdout, and also to the capture buffer if active.
- * ANSI color codes are stripped when writing to the capture buffer.
- */
-int shell_printf(const char *fmt, ...)
-    __attribute__((format(printf, 1, 2)));
 
 typedef void (*shell_cmd_fn)(int argc, char **argv);
 
@@ -58,7 +39,7 @@ static inline void shell_print_help(const shell_cmd_t *table, int count)
     int i;
 
     for (i = 0; i < count; i++) {
-        shell_printf("  %-28s %s\n", table[i].name, table[i].help);
+        claw_printf("  %-28s %s\n", table[i].name, table[i].help);
     }
 }
 
