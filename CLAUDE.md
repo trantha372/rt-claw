@@ -159,7 +159,14 @@ make test-smoke-zynq                   # zynq-a9 boot test
 
 Verify changes by:
 
-1. Build passes on at least one platform
+1. **All platforms must build successfully before committing.** Run:
+   ```bash
+   make build-linux
+   make vexpress-a9-qemu
+   make build-zynq-a9-qemu
+   # ESP32 requires: source ~/esp/esp-idf/export.sh
+   bash -c 'source ~/esp/esp-idf/export.sh >/dev/null 2>&1 && make build-esp32c3-qemu'
+   ```
 2. `scripts/check-patch.sh --staged` passes
 3. QEMU boot test: `make run-vexpress-a9-qemu` or `make run-esp32c3-qemu` or `make run-zynq-a9-qemu`
 
