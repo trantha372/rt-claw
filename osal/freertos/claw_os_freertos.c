@@ -400,7 +400,7 @@ void claw_free(void *ptr)
 /* ---------- Log ---------- */
 
 static int s_log_enabled = 1;
-static int s_log_level = CLAW_LOG_DEBUG;  /* show all by default */
+static int s_log_level = CLAW_LOG_ERROR;  /* errors only by default */
 
 void claw_log_set_enabled(int enabled)
 {
