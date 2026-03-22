@@ -5,7 +5,7 @@
  * Driver core — registration, probe/remove lifecycle.
  */
 
-#include "claw/core/claw_driver.h"
+#include "claw/core/driver.h"
 #include "osal/claw_os.h"
 
 #define TAG "drv_core"

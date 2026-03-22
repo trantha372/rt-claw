@@ -8,7 +8,7 @@
 
 #include "osal/claw_os.h"
 #include "claw/core/gateway.h"
-#include "claw/core/claw_service.h"
+#include "claw/core/service.h"
 
 #include <string.h>
 

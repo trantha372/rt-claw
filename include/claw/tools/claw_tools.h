@@ -13,7 +13,7 @@
 #define CLAW_TOOLS_H
 
 #include "osal/claw_os.h"
-#include "claw/core/claw_tool.h"
+#include "claw/core/tool.h"
 #include "cJSON.h"
 
 /**

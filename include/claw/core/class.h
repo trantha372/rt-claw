@@ -10,8 +10,8 @@
  *   - Ops struct validation helpers
  */
 
-#ifndef CLAW_CORE_CLAW_CLASS_H
-#define CLAW_CORE_CLAW_CLASS_H
+#ifndef CLAW_CORE_CLASS_H
+#define CLAW_CORE_CLASS_H
 
 #include "utils/list.h"   /* container_of, claw_list_node_t */
 #include <stddef.h>
@@ -128,4 +128,4 @@ extern const struct claw_tool *__stop_claw_tools[]
     _Static_assert(offsetof(type, member) == 0,                         \
         #type "." #member " must be the first member")
 
-#endif /* CLAW_CORE_CLAW_CLASS_H */
+#endif /* CLAW_CORE_CLASS_H */

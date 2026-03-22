@@ -5,11 +5,11 @@
  * Tool class — OOP base class for LLM-callable tools.
  */
 
-#ifndef CLAW_CORE_CLAW_TOOL_H
-#define CLAW_CORE_CLAW_TOOL_H
+#ifndef CLAW_CORE_TOOL_H
+#define CLAW_CORE_TOOL_H
 
-#include "claw/core/claw_errno.h"
-#include "claw/core/claw_class.h"
+#include "claw/core/errno.h"
+#include "claw/core/class.h"
 #include <stdint.h>
 
 struct cJSON;
@@ -76,4 +76,4 @@ claw_err_t claw_tool_core_init_all(void);
  */
 void claw_tool_core_cleanup_all(void);
 
-#endif /* CLAW_CORE_CLAW_TOOL_H */
+#endif /* CLAW_CORE_TOOL_H */

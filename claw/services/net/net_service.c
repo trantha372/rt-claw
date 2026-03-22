@@ -8,7 +8,7 @@
 
 #include "osal/claw_os.h"
 #include "claw/services/net/net_service.h"
-#include "claw/core/claw_service.h"
+#include "claw/core/service.h"
 #include "claw/core/console.h"
 #include "utils/list.h"
 

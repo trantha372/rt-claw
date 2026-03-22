@@ -6,8 +6,8 @@
  * Replaces mixed CLAW_OK/CLAW_ERROR/esp_err_t/int conventions.
  */
 
-#ifndef CLAW_CORE_CLAW_ERRNO_H
-#define CLAW_CORE_CLAW_ERRNO_H
+#ifndef CLAW_CORE_ERRNO_H
+#define CLAW_CORE_ERRNO_H
 
 typedef enum {
     CLAW_OK          =  0,    /* success */
@@ -31,4 +31,4 @@ typedef enum {
  */
 const char *claw_strerror(claw_err_t err);
 
-#endif /* CLAW_CORE_CLAW_ERRNO_H */
+#endif /* CLAW_CORE_ERRNO_H */

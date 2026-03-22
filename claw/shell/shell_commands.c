@@ -6,7 +6,7 @@
  */
 
 #include "osal/claw_os.h"
-#include "claw/core/claw_errno.h"
+#include "claw/core/errno.h"
 
 #include <stdio.h>
 #include <string.h>

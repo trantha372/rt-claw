@@ -5,7 +5,7 @@
  * Service core — registration, dependency resolution, lifecycle.
  */
 
-#include "claw/core/claw_service.h"
+#include "claw/core/service.h"
 #include "osal/claw_os.h"
 #include <string.h>
 

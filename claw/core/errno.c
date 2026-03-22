@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "claw/core/claw_errno.h"
+#include "claw/core/errno.h"
 
 const char *claw_strerror(claw_err_t err)
 {

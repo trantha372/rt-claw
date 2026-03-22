@@ -6,11 +6,11 @@
  * dependency declaration, and linker section auto-registration.
  */
 
-#ifndef CLAW_CORE_CLAW_SERVICE_H
-#define CLAW_CORE_CLAW_SERVICE_H
+#ifndef CLAW_CORE_SERVICE_H
+#define CLAW_CORE_SERVICE_H
 
-#include "claw/core/claw_errno.h"
-#include "claw/core/claw_class.h"
+#include "claw/core/errno.h"
+#include "claw/core/class.h"
 
 /* ------------------------------------------------------------------ */
 /* Service lifecycle states                                           */
@@ -142,4 +142,4 @@ static inline void claw_svc_wrap_stop(void (*fn)(void),
     };                                                                  \
     CLAW_SERVICE_REGISTER(id, &id##_svc)
 
-#endif /* CLAW_CORE_CLAW_SERVICE_H */
+#endif /* CLAW_CORE_SERVICE_H */

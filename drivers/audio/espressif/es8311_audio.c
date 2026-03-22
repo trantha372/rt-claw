@@ -383,7 +383,7 @@ int  es8311_audio_play_sound(const char *n) { (void)n; return -1; }
  * Falls through to no-op on other platforms (stubs above).
  */
 #if defined(CLAW_PLATFORM_ESP_IDF) && __has_include("esp_codec_dev.h")
-#include "claw/core/claw_driver.h"
+#include "claw/core/driver.h"
 
 static claw_err_t es8311_drv_probe(struct claw_driver *drv)
 {

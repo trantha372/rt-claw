@@ -25,7 +25,7 @@
 #include "claw/shell/shell_cmd.h"
 #include "claw/shell/shell_commands.h"
 #include "claw/tools/claw_tools.h"
-#include "claw/core/claw_service.h"
+#include "claw/core/service.h"
 #include "utils/list.h"
 
 #include <string.h>

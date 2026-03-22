@@ -395,7 +395,7 @@ static const char schema_delete_skill[] =
 
 /* OOP tool registration */
 #ifdef CONFIG_RTCLAW_SKILL_ENABLE
-#include "claw/core/claw_tool.h"
+#include "claw/core/tool.h"
 
 static const struct claw_tool_ops create_skill_ops = {
     .execute = tool_create_skill,
@@ -430,7 +430,7 @@ CLAW_TOOL_REGISTER(delete_skill, &delete_skill_tool);
 #endif
 
 /* OOP service registration */
-#include "claw/core/claw_service.h"
+#include "claw/core/service.h"
 #ifdef CONFIG_RTCLAW_SKILL_ENABLE
 static const char *ai_skill_deps[] = { "ai_engine", NULL };
 CLAW_DEFINE_SIMPLE_SERVICE(ai_skill, "ai_skill",

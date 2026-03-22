@@ -6,9 +6,9 @@
 #include "osal/claw_os.h"
 #include "claw_config.h"
 #include "claw/claw_init.h"
-#include "claw/core/claw_service.h"
-#include "claw/core/claw_driver.h"
-#include "claw/core/claw_tool.h"
+#include "claw/core/service.h"
+#include "claw/core/driver.h"
+#include "claw/core/tool.h"
 #include "claw/tools/claw_tools.h"
 #include "claw/services/ai/ai_engine.h"
 

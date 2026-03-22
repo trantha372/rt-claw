@@ -101,7 +101,7 @@ cJSON *claw_tools_to_json_exclude(const char *prefix)
 }
 
 /* OOP service registration */
-#include "claw/core/claw_service.h"
+#include "claw/core/service.h"
 #ifdef CONFIG_RTCLAW_SCHED_ENABLE
 static const char *tools_deps[] = { "ai_engine", "sched", NULL };
 #else

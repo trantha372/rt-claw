@@ -9,7 +9,7 @@
 #define CLAW_DRIVERS_INPUT_ESPRESSIF_USB_HID_MOUSE_H
 
 #include <stdint.h>
-#include "claw/core/claw_errno.h"
+#include "claw/core/errno.h"
 
 /* Mouse button bitmask (matches HID standard) */
 #define USB_HID_MOUSE_BTN_LEFT    (1 << 0)

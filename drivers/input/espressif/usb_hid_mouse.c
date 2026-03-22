@@ -192,7 +192,7 @@ int usb_hid_mouse_is_ready(void)
 /* OOP driver registration                                            */
 /* ------------------------------------------------------------------ */
 
-#include "claw/core/claw_driver.h"
+#include "claw/core/driver.h"
 
 static claw_err_t usb_hid_mouse_probe(struct claw_driver *drv)
 {

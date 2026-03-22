@@ -5,7 +5,7 @@
  * Tool core — registration and linker section collection.
  */
 
-#include "claw/core/claw_tool.h"
+#include "claw/core/tool.h"
 #include "osal/claw_os.h"
 
 #include <string.h>

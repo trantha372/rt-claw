@@ -12,7 +12,7 @@
 #include "claw/services/swarm/swarm.h"
 #include "claw/tools/claw_tools.h"
 #include "claw/core/console.h"
-#include "claw/core/claw_service.h"
+#include "claw/core/service.h"
 #include "utils/list.h"
 #ifdef CONFIG_RTCLAW_HEARTBEAT_ENABLE
 #include "claw/core/heartbeat.h"

@@ -312,7 +312,7 @@ void wifi_manager_scan_and_print(void)
 }
 
 /* OOP driver registration */
-#include "claw/core/claw_driver.h"
+#include "claw/core/driver.h"
 
 static claw_err_t wifi_drv_probe(struct claw_driver *drv)
 {

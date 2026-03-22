@@ -58,10 +58,10 @@ struct claw_timer {
 #define CLAW_NO_WAIT        0
 
 /*
- * Return codes — canonical definitions in claw/core/claw_errno.h.
+ * Return codes — canonical definitions in claw/core/errno.h.
  * Legacy macros kept for existing code; values match claw_err_t.
  */
-#include "claw/core/claw_errno.h"
+#include "claw/core/errno.h"
 
 #ifndef CLAW_OK
 #define CLAW_OK             0

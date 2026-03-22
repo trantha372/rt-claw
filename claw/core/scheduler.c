@@ -295,7 +295,7 @@ int sched_task_count(void)
 }
 
 /* OOP service registration */
-#include "claw/core/claw_service.h"
+#include "claw/core/service.h"
 #ifdef CONFIG_RTCLAW_SCHED_ENABLE
 static const char *sched_deps[] = { NULL };
 CLAW_DEFINE_SIMPLE_SERVICE(sched, "sched",

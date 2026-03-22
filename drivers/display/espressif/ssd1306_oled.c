@@ -317,7 +317,7 @@ void ssd1306_set_pixel(int x, int y, int on) { (void)x; (void)y; (void)on; }
 #endif
 
 /* OOP driver registration */
-#include "claw/core/claw_driver.h"
+#include "claw/core/driver.h"
 
 static claw_err_t ssd1306_drv_probe(struct claw_driver *drv)
 {

@@ -11,7 +11,7 @@
 #include "claw/services/ai/ai_engine.h"
 #include "claw/services/ai/ai_memory.h"
 #include "claw/tools/claw_tools.h"
-#include "claw/core/claw_service.h"
+#include "claw/core/service.h"
 #include "utils/list.h"
 #include "cJSON.h"
 

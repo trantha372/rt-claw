@@ -13,7 +13,7 @@
 
 #include "claw_ota.h"
 #include "claw/services/ota/ota_service.h"
-#include "claw/core/claw_tool.h"
+#include "claw/core/tool.h"
 #include "claw/tools/claw_tools.h"
 #include "claw/tools/claw_tools.h"
 

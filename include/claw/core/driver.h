@@ -6,11 +6,11 @@
  * and linker section auto-registration.
  */
 
-#ifndef CLAW_CORE_CLAW_DRIVER_H
-#define CLAW_CORE_CLAW_DRIVER_H
+#ifndef CLAW_CORE_DRIVER_H
+#define CLAW_CORE_DRIVER_H
 
-#include "claw/core/claw_errno.h"
-#include "claw/core/claw_class.h"
+#include "claw/core/errno.h"
+#include "claw/core/class.h"
 
 /* ------------------------------------------------------------------ */
 /* Driver states                                                      */
@@ -56,4 +56,4 @@ claw_err_t claw_driver_probe_all(void);
 void       claw_driver_remove_all(void);
 claw_err_t claw_driver_collect_from_section(void);
 
-#endif /* CLAW_CORE_CLAW_DRIVER_H */
+#endif /* CLAW_CORE_DRIVER_H */
