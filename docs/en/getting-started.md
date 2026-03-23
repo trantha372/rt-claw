@@ -3,7 +3,8 @@
 **English** | [中文](../zh/getting-started.md)
 
 This guide covers building, flashing, and running rt-claw on every supported
-platform: ESP32-C3, ESP32-S3, and vexpress-a9 (RT-Thread).
+platform: ESP32-C3, ESP32-S3, vexpress-a9 (RT-Thread), Zynq-A9 (FreeRTOS),
+and Linux native.
 
 ## Prerequisites
 
@@ -15,6 +16,7 @@ platform: ESP32-C3, ESP32-S3, and vexpress-a9 (RT-Thread).
 sudo apt-get install -y git wget flex bison gperf python3 python3-pip \
     python3-venv cmake ninja-build ccache libffi-dev libssl-dev dfu-util \
     libusb-1.0-0 gcc-arm-none-eabi qemu-system-arm scons meson \
+    libcurl4-openssl-dev ca-certificates \
     libgcrypt20-dev libglib2.0-dev libpixman-1-dev libsdl2-dev libslirp-dev
 ```
 
@@ -23,7 +25,7 @@ sudo apt-get install -y git wget flex bison gperf python3 python3-pip \
 ```bash
 sudo pacman -S --needed git wget flex bison python python-pip cmake ninja \
     ccache dfu-util libusb arm-none-eabi-gcc arm-none-eabi-newlib \
-    qemu-system-arm scons meson \
+    qemu-system-arm scons meson curl ca-certificates \
     libgcrypt glib2 pixman sdl2 libslirp
 ```
 
@@ -233,6 +235,158 @@ make run-vexpress-a9-qemu GDB=1     # debug (GDB port 1234)
 > **Note:** The vexpress-a9 RT-Thread port does not support TLS. The bundled
 > `scripts/api-proxy.py` bridges HTTP (QEMU) to HTTPS (upstream API). It must
 > be running before the firmware makes AI requests.
+
+## QEMU Zynq-A9 (FreeRTOS + FreeRTOS+TCP)
+
+No ESP-IDF required. Uses Meson only (full firmware build).
+
+```bash
+export RTCLAW_AI_API_KEY='sk-...'
+export RTCLAW_AI_API_URL='https://api.anthropic.com/v1/messages'
+export RTCLAW_AI_MODEL='claude-sonnet-4-6'
+
+make build-zynq-a9-qemu
+make run-zynq-a9-qemu
+make run-zynq-a9-qemu GDB=1        # debug (GDB port 1234)
+```
+
+> **Note:** Zynq-A9 uses FreeRTOS+TCP with Cadence GEM Ethernet.
+> Like vexpress-a9, it does not support TLS — use `scripts/api-proxy.py`
+> to bridge HTTP to HTTPS for AI API requests.
+
+## Linux Native
+
+No cross-compiler or QEMU needed. Builds and runs directly on the host.
+
+```bash
+export RTCLAW_AI_API_KEY='sk-...'
+export RTCLAW_AI_API_URL='https://api.anthropic.com/v1/messages'
+export RTCLAW_AI_MODEL='claude-sonnet-4-6'
+
+make build-linux
+make run-linux
+```
+
+The Linux OSAL uses pthreads, libcurl (with TLS), and file-based KV storage.
+See [HTTPS on Embedded Linux](#https-on-embedded-linux) for deployment
+considerations.
+
+## HTTPS on Embedded Linux
+
+When deploying the Linux native build on embedded Linux systems (e.g.,
+Zynq running PetaLinux, Raspberry Pi, Buildroot/Yocto targets), HTTPS
+connections to AI APIs and IM services require proper TLS infrastructure.
+
+### System Time
+
+TLS certificate validation depends on accurate system time. Embedded
+systems often boot with epoch time (1970-01-01), causing all HTTPS
+connections to fail with certificate expiry errors.
+
+**Fix:** Sync time via NTP on boot.
+
+```bash
+# One-shot NTP sync (busybox / embedded)
+ntpd -q -p pool.ntp.org
+
+# Or with chrony / systemd-timesyncd
+timedatectl set-ntp true
+```
+
+If no network NTP is available, set time manually or from an RTC:
+
+```bash
+date -s "2026-03-23 12:00:00"
+hwclock -s                          # read from hardware RTC
+```
+
+> **Symptom:** libcurl returns `CURLE_SSL_CACERT` (60) or
+> `CURLE_PEER_FAILED_VERIFICATION` (51) immediately after boot.
+> Check `date` — if it shows 1970, time sync is the issue.
+
+### CA Certificates
+
+libcurl needs root CA certificates to verify HTTPS server identity.
+Desktop Linux ships `ca-certificates`, but minimal embedded rootfs
+images often omit them.
+
+**Debian / Ubuntu / PetaLinux:**
+
+```bash
+apt-get install -y ca-certificates
+update-ca-certificates
+```
+
+**Buildroot:**
+
+Enable `BR2_PACKAGE_CA_CERTIFICATES` in `make menuconfig`.
+
+**Yocto:**
+
+Add to your image recipe:
+
+```
+IMAGE_INSTALL:append = " ca-certificates"
+```
+
+**Manual (any system):**
+
+```bash
+# Download Mozilla CA bundle
+curl -o /etc/ssl/certs/ca-certificates.crt \
+    https://curl.se/ca/cacert.pem
+
+# Tell libcurl where to find it
+export CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+```
+
+> **Symptom:** libcurl returns `CURLE_SSL_CACERT` (60) even with
+> correct time. Check if `/etc/ssl/certs/ca-certificates.crt` exists.
+
+### libcurl with TLS
+
+The Linux OSAL (`osal/linux/`) uses libcurl for all HTTP/HTTPS requests.
+libcurl must be built with TLS backend support.
+
+**Check TLS support:**
+
+```bash
+curl --version | grep -i ssl
+# Should show: OpenSSL/x.x.x or mbedTLS/x.x.x or similar
+```
+
+**Common embedded Linux packages:**
+
+| Distribution | Package | TLS Backend |
+|-------------|---------|-------------|
+| Debian / Ubuntu | `libcurl4-openssl-dev` | OpenSSL |
+| Buildroot | `BR2_PACKAGE_LIBCURL` + `BR2_PACKAGE_OPENSSL` | OpenSSL |
+| Yocto | `libcurl` (with `PACKAGECONFIG:append = "ssl"`) | OpenSSL |
+| Alpine | `curl-dev` | OpenSSL or mbedTLS |
+
+> **Symptom:** Meson setup fails with `Dependency "libcurl" not found`.
+> Install `libcurl4-openssl-dev` (or equivalent).
+
+### DNS Resolution
+
+Ensure `/etc/resolv.conf` has valid nameservers:
+
+```bash
+echo "nameserver 8.8.8.8" > /etc/resolv.conf
+```
+
+Without DNS, libcurl cannot resolve API hostnames like
+`api.anthropic.com` or `open.feishu.cn`.
+
+### Quick Checklist
+
+| Item | Check | Fix |
+|------|-------|-----|
+| System time | `date` shows current year | NTP sync or manual `date -s` |
+| CA certificates | `/etc/ssl/certs/ca-certificates.crt` exists | Install `ca-certificates` package |
+| libcurl TLS | `curl --version` shows SSL | Install libcurl with OpenSSL support |
+| DNS | `nslookup api.anthropic.com` resolves | Configure `/etc/resolv.conf` |
+| Connectivity | `curl -I https://api.anthropic.com` returns 200 | Check firewall / proxy settings |
 
 ## Debug with GDB
 

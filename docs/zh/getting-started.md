@@ -3,7 +3,8 @@
 [English](../en/getting-started.md) | **中文**
 
 本指南涵盖在所有支持平台上构建、烧录和运行 rt-claw 的完整流程，
-包括 ESP32-C3、ESP32-S3 和 vexpress-a9（RT-Thread）。
+包括 ESP32-C3、ESP32-S3、vexpress-a9（RT-Thread）、Zynq-A9（FreeRTOS）
+和 Linux 原生平台。
 
 ## 前置条件
 
@@ -15,6 +16,7 @@
 sudo apt-get install -y git wget flex bison gperf python3 python3-pip \
     python3-venv cmake ninja-build ccache libffi-dev libssl-dev dfu-util \
     libusb-1.0-0 gcc-arm-none-eabi qemu-system-arm scons meson \
+    libcurl4-openssl-dev ca-certificates \
     libgcrypt20-dev libglib2.0-dev libpixman-1-dev libsdl2-dev libslirp-dev
 ```
 
@@ -23,7 +25,7 @@ sudo apt-get install -y git wget flex bison gperf python3 python3-pip \
 ```bash
 sudo pacman -S --needed git wget flex bison python python-pip cmake ninja \
     ccache dfu-util libusb arm-none-eabi-gcc arm-none-eabi-newlib \
-    qemu-system-arm scons meson \
+    qemu-system-arm scons meson curl ca-certificates \
     libgcrypt glib2 pixman sdl2 libslirp
 ```
 
@@ -231,6 +233,154 @@ make run-vexpress-a9-qemu GDB=1     # 调试模式（GDB 端口 1234）
 > **注意：** vexpress-a9 的 RT-Thread 移植不支持 TLS。项目自带的
 > `scripts/api-proxy.py` 负责将 HTTP（QEMU 侧）桥接到 HTTPS（上游 API）。
 > 固件发起 AI 请求前必须先启动该代理。
+
+## QEMU Zynq-A9（FreeRTOS + FreeRTOS+TCP）
+
+无需 ESP-IDF，使用 Meson 完整固件构建。
+
+```bash
+export RTCLAW_AI_API_KEY='sk-...'
+export RTCLAW_AI_API_URL='https://api.anthropic.com/v1/messages'
+export RTCLAW_AI_MODEL='claude-sonnet-4-6'
+
+make build-zynq-a9-qemu
+make run-zynq-a9-qemu
+make run-zynq-a9-qemu GDB=1        # 调试模式（GDB 端口 1234）
+```
+
+> **注意：** Zynq-A9 使用 FreeRTOS+TCP 配合 Cadence GEM 以太网。
+> 与 vexpress-a9 一样，不支持 TLS — 需要使用 `scripts/api-proxy.py`
+> 将 HTTP 桥接到 HTTPS 以发起 AI API 请求。
+
+## Linux 原生平台
+
+无需交叉编译器或 QEMU，直接在宿主机上构建和运行。
+
+```bash
+export RTCLAW_AI_API_KEY='sk-...'
+export RTCLAW_AI_API_URL='https://api.anthropic.com/v1/messages'
+export RTCLAW_AI_MODEL='claude-sonnet-4-6'
+
+make build-linux
+make run-linux
+```
+
+Linux OSAL 使用 pthreads、libcurl（含 TLS）和基于文件的 KV 存储。
+在嵌入式 Linux 上部署时，请参阅[嵌入式 Linux HTTPS 注意事项](#嵌入式-linux-https-注意事项)。
+
+## 嵌入式 Linux HTTPS 注意事项
+
+在嵌入式 Linux 系统（如 Zynq PetaLinux、树莓派、Buildroot/Yocto 目标板）
+上部署 Linux 原生构建时，连接 AI API 和 IM 服务的 HTTPS 需要完整的 TLS 基础设施。
+
+### 系统时间
+
+TLS 证书验证依赖准确的系统时间。嵌入式系统启动时通常是 epoch 时间
+（1970-01-01），这会导致所有 HTTPS 连接因证书过期而失败。
+
+**解决方法：** 启动时通过 NTP 同步时间。
+
+```bash
+# 一次性 NTP 同步（busybox / 嵌入式环境）
+ntpd -q -p pool.ntp.org
+
+# 或使用 chrony / systemd-timesyncd
+timedatectl set-ntp true
+```
+
+如果没有网络 NTP，可以手动设置或从 RTC 读取：
+
+```bash
+date -s "2026-03-23 12:00:00"
+hwclock -s                          # 从硬件 RTC 读取
+```
+
+> **症状：** libcurl 在启动后立即返回 `CURLE_SSL_CACERT` (60) 或
+> `CURLE_PEER_FAILED_VERIFICATION` (51)。
+> 检查 `date` — 如果显示 1970 年，说明时间同步是问题所在。
+
+### CA 根证书
+
+libcurl 需要 CA 根证书来验证 HTTPS 服务器身份。桌面 Linux 自带
+`ca-certificates`，但精简的嵌入式根文件系统通常不包含。
+
+**Debian / Ubuntu / PetaLinux：**
+
+```bash
+apt-get install -y ca-certificates
+update-ca-certificates
+```
+
+**Buildroot：**
+
+在 `make menuconfig` 中启用 `BR2_PACKAGE_CA_CERTIFICATES`。
+
+**Yocto：**
+
+在镜像配方中添加：
+
+```
+IMAGE_INSTALL:append = " ca-certificates"
+```
+
+**手动安装（任意系统）：**
+
+```bash
+# 下载 Mozilla CA 证书包
+curl -o /etc/ssl/certs/ca-certificates.crt \
+    https://curl.se/ca/cacert.pem
+
+# 告诉 libcurl 证书位置
+export CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+```
+
+> **症状：** 时间正确但 libcurl 返回 `CURLE_SSL_CACERT` (60)。
+> 检查 `/etc/ssl/certs/ca-certificates.crt` 是否存在。
+
+### libcurl TLS 支持
+
+Linux OSAL（`osal/linux/`）使用 libcurl 发起所有 HTTP/HTTPS 请求。
+libcurl 必须构建时包含 TLS 后端支持。
+
+**检查 TLS 支持：**
+
+```bash
+curl --version | grep -i ssl
+# 应显示：OpenSSL/x.x.x 或 mbedTLS/x.x.x 等
+```
+
+**常见嵌入式 Linux 包名：**
+
+| 发行版 | 包名 | TLS 后端 |
+|--------|------|---------|
+| Debian / Ubuntu | `libcurl4-openssl-dev` | OpenSSL |
+| Buildroot | `BR2_PACKAGE_LIBCURL` + `BR2_PACKAGE_OPENSSL` | OpenSSL |
+| Yocto | `libcurl`（配合 `PACKAGECONFIG:append = "ssl"`） | OpenSSL |
+| Alpine | `curl-dev` | OpenSSL 或 mbedTLS |
+
+> **症状：** Meson setup 报错 `Dependency "libcurl" not found`。
+> 安装 `libcurl4-openssl-dev`（或对应包名）。
+
+### DNS 解析
+
+确保 `/etc/resolv.conf` 包含有效的 DNS 服务器：
+
+```bash
+echo "nameserver 8.8.8.8" > /etc/resolv.conf
+```
+
+没有 DNS 的话，libcurl 无法解析 `api.anthropic.com` 或 `open.feishu.cn`
+等 API 域名。
+
+### 快速自检清单
+
+| 项目 | 检查方法 | 修复方法 |
+|------|---------|---------|
+| 系统时间 | `date` 显示当前年份 | NTP 同步或 `date -s` 手动设置 |
+| CA 根证书 | `/etc/ssl/certs/ca-certificates.crt` 存在 | 安装 `ca-certificates` 包 |
+| libcurl TLS | `curl --version` 显示 SSL | 安装带 OpenSSL 的 libcurl |
+| DNS | `nslookup api.anthropic.com` 可解析 | 配置 `/etc/resolv.conf` |
+| 网络连通 | `curl -I https://api.anthropic.com` 返回 200 | 检查防火墙/代理设置 |
 
 ## 使用 GDB 调试
 
