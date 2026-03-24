@@ -114,16 +114,6 @@ Join the GTOC (Gevico Open-Source Community) channels:
 
 Inspired by [OpenClaw](https://github.com/openclaw/openclaw), [Nanobot](https://github.com/HKUDS/nanobot), and [MimiClaw](https://github.com/memovai/mimiclaw).
 
-## Star History
-
-<a href="https://www.star-history.com/?repos=zevorn%2Frt-claw&type=date&legend=top-left">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/image?repos=zevorn/rt-claw&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/image?repos=zevorn/rt-claw&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/image?repos=zevorn/rt-claw&type=date&legend=top-left" />
- </picture>
-</a>
-
 ## License
 
 MIT

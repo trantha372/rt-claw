@@ -114,16 +114,6 @@ make run-esp32c3-qemu
 
 受 [OpenClaw](https://github.com/openclaw/openclaw)、[Nanobot](https://github.com/HKUDS/nanobot) 和 [MimiClaw](https://github.com/memovai/mimiclaw) 启发。
 
-## Star History
-
-<a href="https://www.star-history.com/?repos=zevorn%2Frt-claw&type=date&legend=top-left">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/image?repos=zevorn/rt-claw&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/image?repos=zevorn/rt-claw&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/image?repos=zevorn/rt-claw&type=date&legend=top-left" />
- </picture>
-</a>
-
 ## 许可证
 
 MIT
